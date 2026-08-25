@@ -755,6 +755,11 @@
 
   <!-- GRÁFICAS -->
   <div class="section" id="sec-graficas">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px">Balance histórico mensual — Ventas vs Gastos</div>
+      <div class="chart-wrap" id="chart-historico-wrap"><canvas id="chart-historico"></canvas></div>
+      <div class="empty" id="chart-historico-empty" style="display:none">Aún no hay registros</div>
+    </div>
     <div class="pills" id="chart-pills">
       <button class="pill active" onclick="setChartGranularity('dia',this)">Día</button>
       <button class="pill" onclick="setChartGranularity('semana',this)">Semana</button>
@@ -784,6 +789,11 @@
         <div class="card-title" style="margin-bottom:16px">Proporción de gastos por categoría</div>
         <div class="chart-wrap"><canvas id="chart-cat-proporcion"></canvas></div>
       </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px">Gasto por persona — insumo, inversión y servicio</div>
+      <div class="chart-wrap" id="chart-persona-cat-wrap"><canvas id="chart-persona-categoria"></canvas></div>
+      <div class="empty" id="chart-persona-cat-empty" style="display:none">Sin gastos registrados en estas categorías</div>
     </div>
   </div>
 
@@ -1376,11 +1386,76 @@ function getLastMonths(n) {
   return result;
 }
 
+function getMonthsBetween(start, end) {
+  const result = [];
+  let d = new Date(start.getFullYear(), start.getMonth(), 1);
+  const last = new Date(end.getFullYear(), end.getMonth(), 1);
+  while (d <= last) {
+    result.push(new Date(d));
+    d.setMonth(d.getMonth() + 1);
+  }
+  return result;
+}
+
 function sumMonto(items) { return items.reduce((a,x) => a + parseFloat(x.monto||0), 0); }
+
+function renderHistorico(allV, allG) {
+  const wrap = document.getElementById('chart-historico-wrap');
+  const empty = document.getElementById('chart-historico-empty');
+  const allDates = [...allV, ...allG].map(i => i.fecha).filter(Boolean).sort();
+
+  if (!allDates.length) {
+    wrap.style.display = 'none';
+    empty.style.display = 'block';
+    if (charts.historico) { charts.historico.destroy(); charts.historico = null; }
+    return;
+  }
+  wrap.style.display = 'block';
+  empty.style.display = 'none';
+
+  const start = parseISO(allDates[0]);
+  const months = getMonthsBetween(start, new Date());
+  const labels = months.map(m => `${MESES[m.getMonth()].slice(0,3)} ${m.getFullYear()}`);
+  const vData = months.map(m => sumMonto(allV.filter(i => { const d=parseISO(i.fecha); return d.getFullYear()===m.getFullYear() && d.getMonth()===m.getMonth(); })));
+  const gData = months.map(m => sumMonto(allG.filter(i => { const d=parseISO(i.fecha); return d.getFullYear()===m.getFullYear() && d.getMonth()===m.getMonth(); })));
+
+  const cats = categoriasConDatos(allG);
+  const catDatasets = cats.map(c => {
+    const itemsCat = allG.filter(i => matchesCategoria(i, c.id));
+    return {
+      label: c.label,
+      data: months.map(m => sumMonto(itemsCat.filter(i => { const d=parseISO(i.fecha); return d.getFullYear()===m.getFullYear() && d.getMonth()===m.getMonth(); }))),
+      borderColor: c.color, backgroundColor: c.color, pointBackgroundColor: c.color, pointBorderColor: '#0f0f0f',
+      pointRadius: 3, pointHoverRadius: 5, borderWidth: 1.5, borderDash: [5,3], tension: 0.25, fill: false
+    };
+  });
+
+  if (charts.historico) charts.historico.destroy();
+  charts.historico = new Chart(document.getElementById('chart-historico'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Ventas', data: vData, borderColor: '#4ade80', backgroundColor: '#4ade80', pointBackgroundColor: '#4ade80', pointBorderColor: '#0f0f0f', pointRadius: 4, pointHoverRadius: 6, borderWidth: 2, tension: 0.25, fill: false },
+        { label: 'Gastos', data: gData, borderColor: '#f87171', backgroundColor: '#f87171', pointBackgroundColor: '#f87171', pointBorderColor: '#0f0f0f', pointRadius: 4, pointHoverRadius: 6, borderWidth: 2, tension: 0.25, fill: false },
+        ...catDatasets
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#999', font: { size: 12 } } } },
+      scales: {
+        x: { ticks: { color: '#666', font: { size: 10 }, maxRotation: 45, autoSkip: labels.length > 14 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        y: { ticks: { color: '#666', callback: v => '$'+v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+      }
+    }
+  });
+}
 
 function renderCharts() {
   const allV = getData('ventas');
   const allG = getData('gastos');
+  renderHistorico(allV, allG);
   const wrap = document.getElementById('chart-main-wrap');
   const totalBox = document.getElementById('chart-total-metrics');
   const title = document.getElementById('chart-main-title');
@@ -1537,6 +1612,49 @@ function renderCharts() {
     data: { labels: cats.map(c=>c.label), datasets: [{ data: catTotals, backgroundColor: cats.map(c=>c.color), borderWidth: 0 }] },
     options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#999', font: { size: 11 }, padding: 10 } } } }
   });
+
+  // ─── Gasto por persona: insumo, inversión, servicio ───
+  const catsPersona = ['insumo', 'inversion', 'servicio'];
+  const gFiltrado = allG.filter(i => catsPersona.includes(i.categoria));
+  const personaWrap = document.getElementById('chart-persona-cat-wrap');
+  const personaEmpty = document.getElementById('chart-persona-cat-empty');
+
+  if (!gFiltrado.length) {
+    personaWrap.style.display = 'none';
+    personaEmpty.style.display = 'block';
+    if (charts.personaCategoria) { charts.personaCategoria.destroy(); charts.personaCategoria = null; }
+  } else {
+    personaWrap.style.display = 'block';
+    personaEmpty.style.display = 'none';
+    const personas = [...new Set(gFiltrado.map(i => i.person))]
+      .sort((a,b) => sumMonto(gFiltrado.filter(i=>i.person===b)) - sumMonto(gFiltrado.filter(i=>i.person===a)));
+
+    const datasetsPersona = catsPersona.map(catId => {
+      const c = catInfo(catId);
+      return {
+        label: c.label,
+        data: personas.map(p => sumMonto(gFiltrado.filter(i => i.person === p && i.categoria === catId))),
+        backgroundColor: c.color + '99',
+        borderColor: c.color,
+        borderWidth: 1,
+        borderRadius: 3
+      };
+    });
+
+    if (charts.personaCategoria) charts.personaCategoria.destroy();
+    charts.personaCategoria = new Chart(document.getElementById('chart-persona-categoria'), {
+      type: 'bar',
+      data: { labels: personas, datasets: datasetsPersona },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#999', font: { size: 11 } } } },
+        scales: {
+          x: { stacked: true, ticks: { color: '#666', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { stacked: true, ticks: { color: '#666', callback: v => '$'+v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+        }
+      }
+    });
+  }
 }
 </script>
 </body>
