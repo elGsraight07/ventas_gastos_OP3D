@@ -6,8 +6,8 @@
 <title>Control de Ventas y Gastos</title>
 
 <!-- Firebase v9 compat -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js" onerror="window.__fbLoadError=true"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js" onerror="window.__fbLoadError=true"></script>
 
 <!-- SheetJS para exportar Excel -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -355,6 +355,51 @@
   .pill:hover { border-color: var(--border2); color: var(--text); }
   .pill.active { background: var(--green); color: #0f0f0f; border-color: var(--green); }
 
+  /* ─── PERIOD NAV ─── */
+  .period-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 10px;
+    width: fit-content;
+    flex-wrap: wrap;
+  }
+  .btn-nav {
+    width: 26px; height: 26px;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text2);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .btn-nav:hover { background: var(--bg4); color: var(--text); }
+  .period-label {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text);
+    min-width: 150px;
+    text-align: center;
+    font-family: var(--mono);
+  }
+  .period-picker {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 8px;
+    color: var(--text2);
+    font-family: var(--font);
+    font-size: 12px;
+    cursor: pointer;
+  }
+
   /* ─── FILTERS ─── */
   .filters {
     display: grid;
@@ -457,7 +502,15 @@
 
   /* ─── CHARTS ─── */
   .chart-wrap { position: relative; width: 100%; height: 260px; }
-  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .cat-chip {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
 
   /* ─── TOAST ─── */
   .toast {
@@ -588,10 +641,16 @@
   <!-- DASHBOARD -->
   <div class="section active" id="sec-dashboard">
     <div class="pills" id="dash-pills">
-      <button class="pill active" onclick="setPeriod('hoy',this)">Hoy</button>
-      <button class="pill" onclick="setPeriod('semana',this)">Esta semana</button>
-      <button class="pill" onclick="setPeriod('mes',this)">Este mes</button>
+      <button class="pill active" onclick="setPeriod('dia',this)">Día</button>
+      <button class="pill" onclick="setPeriod('semana',this)">Semana</button>
+      <button class="pill" onclick="setPeriod('mes',this)">Mes</button>
       <button class="pill" onclick="setPeriod('todo',this)">Todo</button>
+    </div>
+    <div class="period-nav" id="dash-period-nav">
+      <button class="btn-nav" onclick="shiftDashPeriod(-1)">‹</button>
+      <div class="period-label" id="dash-period-label"></div>
+      <button class="btn-nav" onclick="shiftDashPeriod(1)">›</button>
+      <input type="date" id="dash-picker" class="period-picker" onchange="onDashPickerChange(this.value)">
     </div>
     <div class="metrics" id="dash-metrics"></div>
     <div class="card">
@@ -652,6 +711,15 @@
       <div class="form-grid">
         <div class="form-group"><label>Fecha</label><input type="date" id="g-fecha"></div>
         <div class="form-group"><label>Monto ($)</label><input type="number" id="g-monto" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="form-group"><label>Categoría</label>
+          <select id="g-categoria">
+            <option value="">Selecciona...</option>
+            <option value="nomina">Pago de nómina</option>
+            <option value="insumo">Insumo</option>
+            <option value="inversion">Inversión</option>
+            <option value="servicio">Pago por servicio</option>
+          </select>
+        </div>
         <div class="form-group"><label>Descripción del producto</label><input type="text" id="g-desc" placeholder="Ej: Caja de cartón grande"></div>
         <div class="form-group"><label>Comprador</label><input type="text" id="g-comprador" placeholder="Nombre del comprador"></div>
       </div>
@@ -667,6 +735,15 @@
       </div>
       <div class="filters">
         <div class="form-group"><label>Buscar</label><input type="text" id="g-search" placeholder="Producto o comprador" oninput="renderGastos()"></div>
+        <div class="form-group"><label>Categoría</label>
+          <select id="g-cat-filter" onchange="renderGastos()">
+            <option value="">Todas</option>
+            <option value="nomina">Pago de nómina</option>
+            <option value="insumo">Insumo</option>
+            <option value="inversion">Inversión</option>
+            <option value="servicio">Pago por servicio</option>
+          </select>
+        </div>
         <div class="form-group"><label>Desde</label><input type="date" id="g-from" onchange="renderGastos()"></div>
         <div class="form-group"><label>Hasta</label><input type="date" id="g-to" onchange="renderGastos()"></div>
         <div class="form-group"><label>Monto mín.</label><input type="number" id="g-min" placeholder="0" oninput="renderGastos()"></div>
@@ -679,13 +756,20 @@
   <!-- GRÁFICAS -->
   <div class="section" id="sec-graficas">
     <div class="pills" id="chart-pills">
-      <button class="pill active" onclick="setChartPeriod(7,this)">7 días</button>
-      <button class="pill" onclick="setChartPeriod(30,this)">30 días</button>
-      <button class="pill" onclick="setChartPeriod(90,this)">3 meses</button>
+      <button class="pill active" onclick="setChartGranularity('dia',this)">Día</button>
+      <button class="pill" onclick="setChartGranularity('semana',this)">Semana</button>
+      <button class="pill" onclick="setChartGranularity('mes',this)">Mes</button>
+      <button class="pill" onclick="setChartGranularity('total',this)">Total</button>
     </div>
     <div class="card">
-      <div class="card-title" style="margin-bottom:16px">Ventas vs Gastos diarios</div>
-      <div class="chart-wrap"><canvas id="chart-main"></canvas></div>
+      <div class="card-title" style="margin-bottom:16px" id="chart-main-title">Ventas vs Gastos por día</div>
+      <div class="chart-wrap" id="chart-main-wrap"><canvas id="chart-main"></canvas></div>
+      <div class="metrics" id="chart-total-metrics" style="display:none"></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px" id="chart-cat-title">Gastos por categoría</div>
+      <div class="chart-wrap" id="chart-cat-wrap"><canvas id="chart-categorias"></canvas></div>
+      <div class="metrics" id="chart-cat-metrics" style="display:none"></div>
     </div>
     <div class="charts-grid">
       <div class="card">
@@ -695,6 +779,10 @@
       <div class="card">
         <div class="card-title" style="margin-bottom:16px">Gastos por comprador</div>
         <div class="chart-wrap"><canvas id="chart-compradores"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px">Proporción de gastos por categoría</div>
+        <div class="chart-wrap"><canvas id="chart-cat-proporcion"></canvas></div>
       </div>
     </div>
   </div>
@@ -712,6 +800,16 @@
     <div class="form-grid">
       <div class="form-group"><label>Fecha</label><input type="date" id="m-fecha"></div>
       <div class="form-group"><label>Monto ($)</label><input type="number" id="m-monto" step="0.01"></div>
+      <div class="form-group" id="m-categoria-row" style="display:none">
+        <label>Categoría</label>
+        <select id="m-categoria">
+          <option value="">Selecciona...</option>
+          <option value="nomina">Pago de nómina</option>
+          <option value="insumo">Insumo</option>
+          <option value="inversion">Inversión</option>
+          <option value="servicio">Pago por servicio</option>
+        </select>
+      </div>
       <div class="form-group" style="grid-column:1/-1"><label>Descripción</label><input type="text" id="m-desc"></div>
       <div class="form-group" style="grid-column:1/-1"><label id="m-person-label">Persona</label><input type="text" id="m-person"></div>
     </div>
@@ -735,8 +833,9 @@
 let db = null;
 let modoDemo = false;
 let demoData = { ventas: {}, gastos: {} };
-let dashPeriod = 'hoy';
-let chartPeriodDays = 7;
+let dashPeriod = 'dia';
+let dashRefDate = new Date(); dashRefDate.setHours(0,0,0,0);
+let chartGranularity = 'dia';
 let editType = null, editId = null;
 let charts = {};
 let listeners = {};
@@ -748,6 +847,45 @@ const today = () => new Date().toISOString().split('T')[0];
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
 const fmt = n => '$' + parseFloat(n||0).toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2});
 const initials = s => s.trim().split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1);
+const toISO = d => { const x = new Date(d); x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().split('T')[0]; };
+const parseISO = s => new Date(s + 'T00:00:00');
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+
+function getWeekRange(d) {
+  // Semana de lunes a domingo
+  const date = new Date(d); date.setHours(0,0,0,0);
+  const day = date.getDay(); // 0=dom..6=sab
+  const diffToMonday = (day === 0 ? -6 : 1 - day);
+  const start = new Date(date); start.setDate(date.getDate() + diffToMonday);
+  const end = new Date(start); end.setDate(start.getDate() + 6);
+  return { start, end };
+}
+
+// ══════════════════════════════════════
+// CATEGORÍAS DE GASTOS
+// ══════════════════════════════════════
+const CATEGORIAS = [
+  { id: 'nomina', label: 'Pago de nómina', color: '#f87171' },
+  { id: 'insumo', label: 'Insumo', color: '#fbbf24' },
+  { id: 'inversion', label: 'Inversión', color: '#60a5fa' },
+  { id: 'servicio', label: 'Pago por servicio', color: '#a78bfa' }
+];
+const CAT_IDS = new Set(CATEGORIAS.map(c => c.id));
+function catInfo(id) { return CATEGORIAS.find(c => c.id === id) || { id: null, label: 'Sin categoría', color: '#666' }; }
+function catLabel(id) { return catInfo(id).label; }
+function catColor(id) { return catInfo(id).color; }
+function matchesCategoria(item, catId) {
+  if (catId === null) return !CAT_IDS.has(item.categoria);
+  return item.categoria === catId;
+}
+// Incluye "Sin categoría" solo si hay gastos antiguos sin clasificar
+function categoriasConDatos(allG) {
+  const list = [...CATEGORIAS];
+  if (allG.some(i => !CAT_IDS.has(i.categoria))) list.push({ id: null, label: 'Sin categoría', color: '#666' });
+  return list;
+}
 
 function toast(msg, color='#4ade80') {
   const el = document.getElementById('toast');
@@ -761,10 +899,17 @@ function toast(msg, color='#4ade80') {
 // FIREBASE SETUP
 // ══════════════════════════════════════
 function conectarFirebase() {
+  const errEl = document.getElementById('setup-error');
+
+  if (window.__fbLoadError || typeof firebase === 'undefined') {
+    errEl.textContent = 'No se pudo cargar Firebase desde internet. Revisa tu conexión, o desactiva temporalmente tu bloqueador de anuncios / extensión de privacidad (uBlock, Brave Shields, AdGuard, etc.) para este sitio, ya que suelen bloquear gstatic.com por contener "firebase" en la URL. Luego recarga la página.';
+    errEl.style.display = 'block';
+    return;
+  }
+
   const dbUrl = document.getElementById('cfg-db-url').value.trim();
   const apiKey = document.getElementById('cfg-api-key').value.trim();
   const projectId = document.getElementById('cfg-project-id').value.trim();
-  const errEl = document.getElementById('setup-error');
 
   if (!dbUrl || !apiKey || !projectId) {
     errEl.textContent = 'Por favor completa todos los campos.';
@@ -852,6 +997,11 @@ function iniciarApp() {
 
 // Auto-reconectar si hay config guardada
 window.addEventListener('DOMContentLoaded', () => {
+  if (window.__fbLoadError || typeof firebase === 'undefined') {
+    const errEl = document.getElementById('setup-error');
+    errEl.textContent = 'No se pudo cargar Firebase desde internet (gstatic.com). Revisa tu conexión o desactiva bloqueadores de anuncios/privacidad para este sitio y recarga la página. Mientras tanto puedes usar el "modo demo".';
+    errEl.style.display = 'block';
+  }
   const saved = localStorage.getItem('fb_cfg');
   if (saved) {
     try {
@@ -923,32 +1073,81 @@ function showSection(id, btn) {
 // ══════════════════════════════════════
 function setPeriod(p, el) {
   dashPeriod = p;
+  dashRefDate = new Date(); dashRefDate.setHours(0,0,0,0);
   document.querySelectorAll('#dash-pills .pill').forEach(x => x.classList.remove('active'));
   el.classList.add('active');
   renderDashboard();
 }
 
-function filterByPeriod(items, period) {
-  const now = new Date(); now.setHours(0,0,0,0);
-  return items.filter(i => {
-    const d = new Date(i.fecha + 'T00:00:00');
-    if (period === 'hoy') return d.getTime() === now.getTime();
-    if (period === 'semana') {
-      const wk = new Date(now); wk.setDate(now.getDate() - 6);
-      return d >= wk && d <= now;
-    }
-    if (period === 'mes') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    return true;
-  });
+function shiftDashPeriod(dir) {
+  const d = new Date(dashRefDate);
+  if (dashPeriod === 'dia') d.setDate(d.getDate() + dir);
+  else if (dashPeriod === 'semana') d.setDate(d.getDate() + dir * 7);
+  else if (dashPeriod === 'mes') d.setMonth(d.getMonth() + dir);
+  dashRefDate = d;
+  renderDashboard();
 }
 
-function applyFilters(items, search, from, to, min, max) {
+function onDashPickerChange(value) {
+  if (!value) return;
+  dashRefDate = dashPeriod === 'mes' ? new Date(value + '-01T00:00:00') : parseISO(value);
+  renderDashboard();
+}
+
+function updateDashControls() {
+  const nav = document.getElementById('dash-period-nav');
+  const picker = document.getElementById('dash-picker');
+  const label = document.getElementById('dash-period-label');
+  if (dashPeriod === 'todo') { nav.style.display = 'none'; return; }
+  nav.style.display = 'flex';
+
+  if (dashPeriod === 'dia') {
+    picker.type = 'date';
+    picker.value = toISO(dashRefDate);
+    label.textContent = `${capitalize(DIAS[dashRefDate.getDay()])} ${dashRefDate.getDate()} de ${MESES[dashRefDate.getMonth()]}`;
+  } else if (dashPeriod === 'semana') {
+    picker.type = 'date';
+    picker.value = toISO(dashRefDate);
+    const { start, end } = getWeekRange(dashRefDate);
+    label.textContent = start.getMonth() === end.getMonth()
+      ? `${start.getDate()} - ${end.getDate()} ${MESES[end.getMonth()]}`
+      : `${start.getDate()} ${MESES[start.getMonth()].slice(0,3)} - ${end.getDate()} ${MESES[end.getMonth()].slice(0,3)}`;
+  } else if (dashPeriod === 'mes') {
+    picker.type = 'month';
+    picker.value = toISO(dashRefDate).slice(0,7);
+    label.textContent = `${capitalize(MESES[dashRefDate.getMonth()])} ${dashRefDate.getFullYear()}`;
+  }
+}
+
+function filterByPeriod(items, period, refDate) {
+  if (period === 'todo') return items;
+  if (period === 'dia') {
+    const iso = toISO(refDate);
+    return items.filter(i => i.fecha === iso);
+  }
+  if (period === 'semana') {
+    const { start, end } = getWeekRange(refDate);
+    const s = toISO(start), e = toISO(end);
+    return items.filter(i => i.fecha >= s && i.fecha <= e);
+  }
+  if (period === 'mes') {
+    const y = refDate.getFullYear(), m = refDate.getMonth();
+    return items.filter(i => {
+      const d = parseISO(i.fecha);
+      return d.getFullYear() === y && d.getMonth() === m;
+    });
+  }
+  return items;
+}
+
+function applyFilters(items, search, from, to, min, max, categoria) {
   return items.filter(i => {
     if (search && !i.desc.toLowerCase().includes(search.toLowerCase()) && !i.person.toLowerCase().includes(search.toLowerCase())) return false;
     if (from && i.fecha < from) return false;
     if (to && i.fecha > to) return false;
     if (min !== '' && !isNaN(min) && parseFloat(i.monto) < parseFloat(min)) return false;
     if (max !== '' && !isNaN(max) && parseFloat(i.monto) > parseFloat(max)) return false;
+    if (categoria && i.categoria !== categoria) return false;
     return true;
   });
 }
@@ -965,13 +1164,14 @@ function renderTableHTML(items, type, compact=false) {
     <tr>
       <td style="color:var(--text3);font-family:var(--mono);font-size:12px">${i.fecha}</td>
       <td><span class="amount ${amtClass}">${fmt(i.monto)}</span></td>
+      ${isVenta ? '' : `<td><span class="cat-chip" style="background:${catColor(i.categoria)}22;color:${catColor(i.categoria)}">${catLabel(i.categoria)}</span></td>`}
       <td style="max-width:220px">${i.desc}</td>
       <td><span class="person-chip"><span class="avatar">${initials(i.person)}</span>${i.person}</span></td>
       ${compact ? '' : `<td><div class="actions"><button class="btn btn-edit" onclick="openEdit('${type}','${i.id}')">Editar</button><button class="btn btn-del" onclick="del('${type}','${i.id}')">Eliminar</button></div></td>`}
     </tr>`).join('');
   return `<table>
     <thead><tr>
-      <th>Fecha</th><th>Monto</th><th>Descripción</th><th>${personLabel}</th>
+      <th>Fecha</th><th>Monto</th>${isVenta ? '' : '<th>Categoría</th>'}<th>Descripción</th><th>${personLabel}</th>
       ${compact ? '' : '<th>Acciones</th>'}
     </tr></thead>
     <tbody>${rows}</tbody>
@@ -982,8 +1182,9 @@ function renderTableHTML(items, type, compact=false) {
 // DASHBOARD
 // ══════════════════════════════════════
 function renderDashboard() {
-  const ventas = filterByPeriod(getData('ventas'), dashPeriod);
-  const gastos = filterByPeriod(getData('gastos'), dashPeriod);
+  updateDashControls();
+  const ventas = filterByPeriod(getData('ventas'), dashPeriod, dashRefDate);
+  const gastos = filterByPeriod(getData('gastos'), dashPeriod, dashRefDate);
   const tv = ventas.reduce((a,x) => a + parseFloat(x.monto||0), 0);
   const tg = gastos.reduce((a,x) => a + parseFloat(x.monto||0), 0);
   const net = tv - tg;
@@ -1041,7 +1242,8 @@ function renderGastos() {
     document.getElementById('g-from').value,
     document.getElementById('g-to').value,
     document.getElementById('g-min').value,
-    document.getElementById('g-max').value
+    document.getElementById('g-max').value,
+    document.getElementById('g-cat-filter').value
   );
   document.getElementById('gastos-table').innerHTML = renderTableHTML(filtered,'gastos');
   document.getElementById('g-count').textContent = filtered.length + ' registros';
@@ -1050,12 +1252,14 @@ function renderGastos() {
 async function addGasto() {
   const fecha = document.getElementById('g-fecha').value;
   const monto = document.getElementById('g-monto').value;
+  const categoria = document.getElementById('g-categoria').value;
   const desc = document.getElementById('g-desc').value.trim();
   const person = document.getElementById('g-comprador').value.trim();
-  if (!fecha||!monto||!desc||!person) { toast('Completa todos los campos','#f87171'); return; }
+  if (!fecha||!monto||!categoria||!desc||!person) { toast('Completa todos los campos','#f87171'); return; }
   const id = uid();
-  await writeData('gastos', id, {id, fecha, monto: parseFloat(monto), desc, person, ts: Date.now()});
+  await writeData('gastos', id, {id, fecha, monto: parseFloat(monto), categoria, desc, person, ts: Date.now()});
   document.getElementById('g-monto').value = '';
+  document.getElementById('g-categoria').value = '';
   document.getElementById('g-desc').value = '';
   document.getElementById('g-comprador').value = '';
   document.getElementById('g-fecha').value = today();
@@ -1075,6 +1279,13 @@ function openEdit(type, id) {
   document.getElementById('m-monto').value = item.monto;
   document.getElementById('m-desc').value = item.desc;
   document.getElementById('m-person').value = item.person;
+  const catRow = document.getElementById('m-categoria-row');
+  if (type === 'gastos') {
+    catRow.style.display = 'block';
+    document.getElementById('m-categoria').value = item.categoria || '';
+  } else {
+    catRow.style.display = 'none';
+  }
   document.getElementById('modal').style.display = 'flex';
 }
 
@@ -1083,9 +1294,13 @@ async function saveEdit() {
   const monto = document.getElementById('m-monto').value;
   const desc = document.getElementById('m-desc').value.trim();
   const person = document.getElementById('m-person').value.trim();
+  const categoria = document.getElementById('m-categoria').value;
   if (!fecha||!monto||!desc||!person) { toast('Completa todos los campos','#f87171'); return; }
+  if (editType === 'gastos' && !categoria) { toast('Selecciona una categoría','#f87171'); return; }
   const orig = getData(editType).find(i => i.id === editId);
-  await writeData(editType, editId, {...orig, fecha, monto: parseFloat(monto), desc, person});
+  const updated = {...orig, fecha, monto: parseFloat(monto), desc, person};
+  if (editType === 'gastos') updated.categoria = categoria;
+  await writeData(editType, editId, updated);
   closeModal();
   toast('Registro actualizado');
 }
@@ -1110,6 +1325,7 @@ function exportar(type) {
   const data = items.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(i => ({
     'Fecha': i.fecha,
     'Monto': i.monto,
+    ...(isVenta ? {} : {'Categoría': catLabel(i.categoria)}),
     'Descripción': i.desc,
     [isVenta ? 'Vendedor' : 'Comprador']: i.person
   }));
@@ -1124,55 +1340,174 @@ function exportar(type) {
 // ══════════════════════════════════════
 // CHARTS
 // ══════════════════════════════════════
-function setChartPeriod(d, el) {
-  chartPeriodDays = d;
+function setChartGranularity(g, el) {
+  chartGranularity = g;
   document.querySelectorAll('#chart-pills .pill').forEach(x => x.classList.remove('active'));
   el.classList.add('active');
   renderCharts();
 }
 
-function getLast(days) {
+function getLastDays(n) {
   const result = [];
-  for (let i = days-1; i >= 0; i--) {
+  for (let i = n-1; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate()-i);
-    result.push(d.toISOString().split('T')[0]);
+    result.push(toISO(d));
   }
   return result;
 }
 
+function getLastWeeks(n) {
+  const result = [];
+  const { start: curStart } = getWeekRange(new Date());
+  for (let i = n-1; i >= 0; i--) {
+    const start = new Date(curStart); start.setDate(start.getDate() - i*7);
+    const end = new Date(start); end.setDate(start.getDate() + 6);
+    result.push({ start, end });
+  }
+  return result;
+}
+
+function getLastMonths(n) {
+  const result = [];
+  const now = new Date();
+  for (let i = n-1; i >= 0; i--) {
+    result.push(new Date(now.getFullYear(), now.getMonth()-i, 1));
+  }
+  return result;
+}
+
+function sumMonto(items) { return items.reduce((a,x) => a + parseFloat(x.monto||0), 0); }
+
 function renderCharts() {
   const allV = getData('ventas');
   const allG = getData('gastos');
-  const days = getLast(chartPeriodDays);
+  const wrap = document.getElementById('chart-main-wrap');
+  const totalBox = document.getElementById('chart-total-metrics');
+  const title = document.getElementById('chart-main-title');
 
-  const vByDay = {}, gByDay = {};
-  days.forEach(d => { vByDay[d]=0; gByDay[d]=0; });
-  allV.forEach(i => { if (vByDay[i.fecha] !== undefined) vByDay[i.fecha] += parseFloat(i.monto||0); });
-  allG.forEach(i => { if (gByDay[i.fecha] !== undefined) gByDay[i.fecha] += parseFloat(i.monto||0); });
+  if (chartGranularity === 'total') {
+    wrap.style.display = 'none';
+    totalBox.style.display = 'grid';
+    title.textContent = 'Balance total (histórico)';
+    const tv = sumMonto(allV), tg = sumMonto(allG), net = tv - tg;
+    totalBox.innerHTML = `
+      <div class="metric"><div class="metric-label">Total ventas</div><div class="metric-value green">${fmt(tv)}</div></div>
+      <div class="metric"><div class="metric-label">Total gastos</div><div class="metric-value red">${fmt(tg)}</div></div>
+      <div class="metric"><div class="metric-label">Balance neto</div><div class="metric-value ${net>=0?'blue':'red'}">${fmt(net)}</div></div>`;
+    if (charts.main) { charts.main.destroy(); charts.main = null; }
+  } else {
+    wrap.style.display = 'block';
+    totalBox.style.display = 'none';
+    let labels = [], vData = [], gData = [];
 
-  const labels = days.map(d => {
-    const p = d.split('-'); return p[2]+'/'+p[1];
-  });
-
-  if (charts.main) charts.main.destroy();
-  charts.main = new Chart(document.getElementById('chart-main'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Ventas', data: days.map(d=>vByDay[d]), backgroundColor: 'rgba(74,222,128,0.6)', borderColor: '#4ade80', borderWidth: 1, borderRadius: 4 },
-        { label: 'Gastos', data: days.map(d=>gByDay[d]), backgroundColor: 'rgba(248,113,113,0.6)', borderColor: '#f87171', borderWidth: 1, borderRadius: 4 }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: '#999', font: { size: 12 } } } },
-      scales: {
-        x: { ticks: { color: '#666', font: { size: 10 }, maxRotation: 45, autoSkip: chartPeriodDays > 14 }, grid: { color: 'rgba(255,255,255,0.05)' } },
-        y: { ticks: { color: '#666', callback: v => '$'+v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
-      }
+    if (chartGranularity === 'dia') {
+      title.textContent = 'Ventas vs Gastos por día (últimos 30 días)';
+      const days = getLastDays(30);
+      const vByDay = {}, gByDay = {};
+      days.forEach(d => { vByDay[d]=0; gByDay[d]=0; });
+      allV.forEach(i => { if (vByDay[i.fecha] !== undefined) vByDay[i.fecha] += parseFloat(i.monto||0); });
+      allG.forEach(i => { if (gByDay[i.fecha] !== undefined) gByDay[i.fecha] += parseFloat(i.monto||0); });
+      labels = days.map(d => { const p = d.split('-'); return p[2]+'/'+p[1]; });
+      vData = days.map(d => vByDay[d]);
+      gData = days.map(d => gByDay[d]);
+    } else if (chartGranularity === 'semana') {
+      title.textContent = 'Ventas vs Gastos por semana (últimas 12 semanas)';
+      const weeks = getLastWeeks(12);
+      labels = weeks.map(w => `${w.start.getDate()}/${w.start.getMonth()+1}`);
+      vData = weeks.map(w => { const s=toISO(w.start), e=toISO(w.end); return sumMonto(allV.filter(i => i.fecha>=s && i.fecha<=e)); });
+      gData = weeks.map(w => { const s=toISO(w.start), e=toISO(w.end); return sumMonto(allG.filter(i => i.fecha>=s && i.fecha<=e)); });
+    } else if (chartGranularity === 'mes') {
+      title.textContent = 'Ventas vs Gastos por mes (últimos 12 meses)';
+      const months = getLastMonths(12);
+      labels = months.map(m => `${MESES[m.getMonth()].slice(0,3)} ${String(m.getFullYear()).slice(2)}`);
+      vData = months.map(m => sumMonto(allV.filter(i => { const d=parseISO(i.fecha); return d.getFullYear()===m.getFullYear() && d.getMonth()===m.getMonth(); })));
+      gData = months.map(m => sumMonto(allG.filter(i => { const d=parseISO(i.fecha); return d.getFullYear()===m.getFullYear() && d.getMonth()===m.getMonth(); })));
     }
-  });
+
+    if (charts.main) charts.main.destroy();
+    charts.main = new Chart(document.getElementById('chart-main'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Ventas', data: vData, backgroundColor: 'rgba(74,222,128,0.6)', borderColor: '#4ade80', borderWidth: 1, borderRadius: 4 },
+          { label: 'Gastos', data: gData, backgroundColor: 'rgba(248,113,113,0.6)', borderColor: '#f87171', borderWidth: 1, borderRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#999', font: { size: 12 } } } },
+        scales: {
+          x: { ticks: { color: '#666', font: { size: 10 }, maxRotation: 45, autoSkip: labels.length > 14 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { ticks: { color: '#666', callback: v => '$'+v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  // ─── Gastos por categoría ───
+  const catWrap = document.getElementById('chart-cat-wrap');
+  const catMetrics = document.getElementById('chart-cat-metrics');
+  const catTitle = document.getElementById('chart-cat-title');
+  const cats = categoriasConDatos(allG);
+
+  if (chartGranularity === 'total') {
+    catWrap.style.display = 'none';
+    catMetrics.style.display = 'grid';
+    catTitle.textContent = 'Gastos por categoría (histórico)';
+    catMetrics.innerHTML = cats.map(c => {
+      const total = sumMonto(allG.filter(i => matchesCategoria(i, c.id)));
+      return `<div class="metric"><div class="metric-label">${c.label}</div><div class="metric-value" style="color:${c.color}">${fmt(total)}</div></div>`;
+    }).join('');
+    if (charts.categorias) { charts.categorias.destroy(); charts.categorias = null; }
+  } else {
+    catWrap.style.display = 'block';
+    catMetrics.style.display = 'none';
+    let catLabels = [], periods = [];
+
+    if (chartGranularity === 'dia') {
+      catTitle.textContent = 'Gastos por categoría por día (últimos 30 días)';
+      const days = getLastDays(30);
+      catLabels = days.map(d => { const p = d.split('-'); return p[2]+'/'+p[1]; });
+      periods = days.map(d => (i => i.fecha === d));
+    } else if (chartGranularity === 'semana') {
+      catTitle.textContent = 'Gastos por categoría por semana (últimas 12 semanas)';
+      const weeks = getLastWeeks(12);
+      catLabels = weeks.map(w => `${w.start.getDate()}/${w.start.getMonth()+1}`);
+      periods = weeks.map(w => { const s=toISO(w.start), e=toISO(w.end); return i => i.fecha >= s && i.fecha <= e; });
+    } else if (chartGranularity === 'mes') {
+      catTitle.textContent = 'Gastos por categoría por mes (últimos 12 meses)';
+      const months = getLastMonths(12);
+      catLabels = months.map(m => `${MESES[m.getMonth()].slice(0,3)} ${String(m.getFullYear()).slice(2)}`);
+      periods = months.map(m => (i => { const d=parseISO(i.fecha); return d.getFullYear()===m.getFullYear() && d.getMonth()===m.getMonth(); }));
+    }
+
+    const catDatasets = cats.map(c => {
+      const itemsCat = allG.filter(i => matchesCategoria(i, c.id));
+      return {
+        label: c.label,
+        data: periods.map(test => sumMonto(itemsCat.filter(test))),
+        backgroundColor: c.color + '99',
+        borderColor: c.color,
+        borderWidth: 1,
+        borderRadius: 3
+      };
+    });
+
+    if (charts.categorias) charts.categorias.destroy();
+    charts.categorias = new Chart(document.getElementById('chart-categorias'), {
+      type: 'bar',
+      data: { labels: catLabels, datasets: catDatasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#999', font: { size: 11 } } } },
+        scales: {
+          x: { stacked: true, ticks: { color: '#666', font: { size: 10 }, maxRotation: 45, autoSkip: catLabels.length > 14 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { stacked: true, ticks: { color: '#666', callback: v => '$'+v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+        }
+      }
+    });
+  }
 
   const pal = ['#4ade80','#60a5fa','#fbbf24','#f87171','#a78bfa','#34d399','#fb923c'];
   const vPerson = {}, gPerson = {};
@@ -1192,6 +1527,14 @@ function renderCharts() {
   charts.compradores = new Chart(document.getElementById('chart-compradores'), {
     type: 'doughnut',
     data: { labels: gKeys, datasets: [{ data: gKeys.map(k=>gPerson[k]), backgroundColor: pal, borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#999', font: { size: 11 }, padding: 10 } } } }
+  });
+
+  if (charts.catProporcion) charts.catProporcion.destroy();
+  const catTotals = cats.map(c => sumMonto(allG.filter(i => matchesCategoria(i, c.id))));
+  charts.catProporcion = new Chart(document.getElementById('chart-cat-proporcion'), {
+    type: 'doughnut',
+    data: { labels: cats.map(c=>c.label), datasets: [{ data: catTotals, backgroundColor: cats.map(c=>c.color), borderWidth: 0 }] },
     options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#999', font: { size: 11 }, padding: 10 } } } }
   });
 }
