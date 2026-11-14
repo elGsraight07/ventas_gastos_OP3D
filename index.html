@@ -2,8 +2,9 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Control de Ventas y Gastos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f5f5f7">
+<title>Ventas &amp; Gastos · One Print 3D</title>
 
 <!-- Firebase v9 compat -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js" onerror="window.__fbLoadError=true"></script>
@@ -15,543 +16,411 @@
 <!-- Chart.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 
-<!-- Google Fonts -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Three.js (escena 3D) -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
 
 <style>
   :root {
-    --bg: #0f0f0f;
-    --bg2: #171717;
-    --bg3: #1f1f1f;
-    --bg4: #282828;
-    --border: rgba(255,255,255,0.08);
-    --border2: rgba(255,255,255,0.14);
-    --text: #f0ede8;
-    --text2: #999;
-    --text3: #666;
-    --green: #4ade80;
-    --green-bg: rgba(74,222,128,0.1);
-    --red: #f87171;
-    --red-bg: rgba(248,113,113,0.1);
-    --blue: #60a5fa;
-    --blue-bg: rgba(96,165,250,0.1);
-    --amber: #fbbf24;
-    --amber-bg: rgba(251,191,36,0.1);
-    --radius: 10px;
-    --radius-lg: 14px;
-    --font: 'DM Sans', sans-serif;
-    --mono: 'DM Mono', monospace;
+    --bg: #f5f5f7;
+    --bg2: #ffffff;
+    --bg3: #f5f5f7;
+    --bg4: #e8e8ed;
+    --border: rgba(0,0,0,0.06);
+    --border2: rgba(0,0,0,0.12);
+    --text: #1d1d1f;
+    --text2: #515154;
+    --text3: #86868b;
+    --green: #34c759;
+    --green-bg: rgba(52,199,89,0.12);
+    --red: #ff3b30;
+    --red-bg: rgba(255,59,48,0.10);
+    --blue: #0071e3;
+    --blue-bg: rgba(0,113,227,0.10);
+    --amber: #ff9500;
+    --amber-bg: rgba(255,149,0,0.12);
+    --radius: 12px;
+    --radius-lg: 22px;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.05);
+    --shadow-hover: 0 2px 6px rgba(0,0,0,0.06), 0 18px 40px rgba(0,0,0,0.09);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono: "SF Mono", ui-monospace, Menlo, Monaco, monospace;
+    --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
   body {
     font-family: var(--font);
     background: var(--bg);
     color: var(--text);
     font-size: 14px;
-    line-height: 1.6;
+    line-height: 1.5;
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
   }
+  .num { font-variant-numeric: tabular-nums; }
 
-  /* ─── HEADER ─── */
+  /* ─── HEADER (vidrio) ─── */
   .header {
-    background: var(--bg2);
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(245,245,247,0.72);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
     border-bottom: 1px solid var(--border);
     padding: 0 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 56px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    padding-top: env(safe-area-inset-top);
   }
-  .header-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  .header-inner {
+    max-width: 1040px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px; gap: 16px;
   }
+  .header-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .brand-icon {
-    width: 28px; height: 28px;
-    background: var(--green);
-    border-radius: 7px;
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(145deg, #1d1d1f, #3a3a3c);
     display: flex; align-items: center; justify-content: center;
-    font-size: 14px;
+    color: #fff; font-size: 13px; font-weight: 700; letter-spacing: -0.04em;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+    flex-shrink: 0;
   }
-  .brand-name {
-    font-size: 15px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-  }
-  .brand-name span { color: var(--green); }
+  .brand-name { font-family: var(--font-display); font-size: 16px; font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; }
+  .brand-name span { color: var(--text3); font-weight: 500; }
   .sync-badge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    color: var(--text3);
-    font-family: var(--mono);
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text3); white-space: nowrap;
+    background: rgba(0,0,0,0.04); padding: 5px 10px; border-radius: 20px;
   }
-  .sync-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--text3);
-    transition: background 0.3s;
-  }
-  .sync-dot.live { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); transition: background 0.3s; }
+  .sync-dot.live { background: var(--green); box-shadow: 0 0 0 3px rgba(52,199,89,0.18); animation: pulse 2.4s infinite; }
   .sync-dot.error { background: var(--red); }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
 
-  /* ─── NAV ─── */
+  /* ─── NAV (control segmentado) ─── */
+  .nav-wrap { padding: 14px 20px 0; display: flex; justify-content: center; }
   .nav {
-    display: flex;
-    gap: 2px;
-    background: var(--bg3);
-    border-bottom: 1px solid var(--border);
-    padding: 0 20px;
-    overflow-x: auto;
+    display: inline-flex; gap: 2px; padding: 3px;
+    background: rgba(118,118,128,0.12);
+    border-radius: 11px;
+    max-width: 100%; overflow-x: auto;
+    scrollbar-width: none;
   }
-  .nav::-webkit-scrollbar { height: 0; }
+  .nav::-webkit-scrollbar { display: none; }
   .nav-btn {
-    padding: 12px 18px;
-    background: transparent;
-    border: none;
-    color: var(--text2);
-    font-family: var(--font);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
+    padding: 7px 20px;
+    background: transparent; border: none; border-radius: 8px;
+    color: var(--text); font-family: var(--font);
+    font-size: 13px; font-weight: 500; cursor: pointer;
     white-space: nowrap;
-    transition: all 0.15s;
+    transition: background 0.25s var(--ease), box-shadow 0.25s var(--ease), color 0.2s;
   }
-  .nav-btn:hover { color: var(--text); }
-  .nav-btn.active { color: var(--green); border-bottom-color: var(--green); }
+  .nav-btn:hover { color: var(--text); background: rgba(255,255,255,0.5); }
+  .nav-btn.active { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 3px 8px rgba(0,0,0,0.06); font-weight: 600; }
 
   /* ─── LAYOUT ─── */
-  .container { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+  .container { max-width: 1040px; margin: 0 auto; padding: 22px 20px 48px; }
   .section { display: none; }
-  .section.active { display: block; }
+  .section.active { display: block; animation: secIn 0.45s var(--ease); }
+  @keyframes secIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
   /* ─── SETUP SCREEN ─── */
-  .setup-screen {
-    min-height: calc(100vh - 56px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 40px 20px;
-  }
+  .setup-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
   .setup-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 40px;
-    max-width: 520px;
-    width: 100%;
+    background: var(--bg2); border-radius: 28px; padding: 44px 40px;
+    max-width: 540px; width: 100%; box-shadow: var(--shadow);
   }
-  .setup-card h2 {
-    font-size: 22px;
-    font-weight: 600;
-    letter-spacing: -0.03em;
-    margin-bottom: 8px;
-  }
-  .setup-card p { color: var(--text2); font-size: 13px; margin-bottom: 28px; line-height: 1.7; }
+  .setup-card h2 { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 8px; }
+  .setup-card p { color: var(--text2); font-size: 14px; margin-bottom: 28px; line-height: 1.6; }
   .setup-steps { counter-reset: step; }
-  .setup-step {
-    display: flex;
-    gap: 14px;
-    margin-bottom: 20px;
-    align-items: flex-start;
-  }
+  .setup-step { display: flex; gap: 14px; margin-bottom: 20px; align-items: flex-start; }
   .step-num {
-    counter-increment: step;
-    min-width: 24px; height: 24px;
-    background: var(--bg4);
-    border: 1px solid var(--border2);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text2);
-    margin-top: 2px;
-    font-family: var(--mono);
+    min-width: 24px; height: 24px; border-radius: 50%;
+    background: var(--bg4); display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; color: var(--text2); margin-top: 1px;
   }
-  .setup-step label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 5px; }
+  .setup-step label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 6px; font-weight: 500; }
   .setup-step input {
-    width: 100%;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 9px 12px;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 12px;
+    width: 100%; background: var(--bg3); border: 1px solid transparent; border-radius: var(--radius);
+    padding: 11px 13px; color: var(--text); font-family: var(--mono); font-size: 13px;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
   }
-  .setup-step input:focus { outline: none; border-color: var(--green); }
-  .setup-step .hint {
-    font-size: 11px;
-    color: var(--text3);
-    margin-top: 4px;
-    line-height: 1.5;
-  }
-  .setup-step .step-content { flex: 1; }
+  .setup-step input:focus { outline: none; background: #fff; border-color: var(--blue); box-shadow: 0 0 0 4px var(--blue-bg); }
+  .setup-step .hint { font-size: 12px; color: var(--text3); margin-top: 5px; line-height: 1.5; }
+  .setup-step .step-content { flex: 1; min-width: 0; }
   .btn-connect {
-    width: 100%;
-    padding: 11px;
-    background: var(--green);
-    color: #0f0f0f;
-    border: none;
-    border-radius: var(--radius);
-    font-family: var(--font);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 8px;
-    transition: opacity 0.15s;
+    width: 100%; padding: 13px; background: var(--blue); color: #fff; border: none;
+    border-radius: 980px; font-family: var(--font); font-size: 15px; font-weight: 600;
+    cursor: pointer; margin-top: 8px; transition: transform 0.2s var(--spring), background 0.2s;
   }
-  .btn-connect:hover { opacity: 0.88; }
+  .btn-connect:hover { background: #0077ed; }
+  .btn-connect:active { transform: scale(0.98); }
   .setup-error {
-    background: var(--red-bg);
-    border: 1px solid rgba(248,113,113,0.3);
-    border-radius: var(--radius);
-    padding: 10px 14px;
-    font-size: 12px;
-    color: var(--red);
-    margin-top: 12px;
-    display: none;
+    background: var(--red-bg); border-radius: var(--radius); padding: 11px 14px;
+    font-size: 13px; color: #c4291f; margin-top: 12px; display: none; line-height: 1.5;
   }
-  .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
-  .demo-note {
-    font-size: 12px;
-    color: var(--text3);
-    text-align: center;
-  }
-  .demo-note a { color: var(--blue); text-decoration: none; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 26px 0; }
+  .demo-note { font-size: 13px; color: var(--text3); text-align: center; }
+  .demo-note a { color: var(--blue); text-decoration: none; font-weight: 500; }
 
   /* ─── CARDS ─── */
   .card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 20px;
-    margin-bottom: 16px;
+    background: var(--bg2); border-radius: var(--radius-lg);
+    padding: 22px; margin-bottom: 18px; box-shadow: var(--shadow);
   }
-  .card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 18px;
-  }
-  .card-title {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text3);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 10px; }
+  .card-title { font-family: var(--font-display); font-size: 17px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
 
   /* ─── METRICS ─── */
-  .metrics {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 12px;
-    margin-bottom: 20px;
-  }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 18px; perspective: 900px; }
   .metric {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
+    background: var(--bg2); border-radius: 18px; padding: 18px 18px 16px;
+    box-shadow: var(--shadow);
+    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateZ(0);
+    transition: transform 0.5s var(--spring), box-shadow 0.3s var(--ease);
+    will-change: transform;
   }
-  .metric-label {
-    font-size: 11px;
-    color: var(--text3);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 8px;
-  }
-  .metric-value {
-    font-size: 24px;
-    font-weight: 600;
-    font-family: var(--mono);
-    letter-spacing: -0.02em;
-  }
+  .metric.tilting { transition: transform 0.08s linear, box-shadow 0.3s var(--ease); box-shadow: var(--shadow-hover); }
+  .metric-label { font-size: 12px; color: var(--text3); font-weight: 500; margin-bottom: 6px; }
+  .metric-value { font-family: var(--font-display); font-size: 26px; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .metric-value.green { color: var(--green); }
   .metric-value.red { color: var(--red); }
   .metric-value.blue { color: var(--blue); }
   .metric-value.amber { color: var(--amber); }
 
+  /* ─── STAGE 3D ─── */
+  .stage-slot { margin-bottom: 18px; }
+  .stage {
+    position: relative; height: 400px; border-radius: 26px; overflow: hidden;
+    background: radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #eef1f6 55%, #e4e8ef 100%);
+    box-shadow: var(--shadow);
+    isolation: isolate;
+    transition: background 0.6s var(--ease);
+    touch-action: pan-y;
+  }
+  .stage[data-mode="ventas"] { background: radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #eaf7ee 55%, #dcefe2 100%); }
+  .stage[data-mode="gastos"] { background: radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #fbf3e6 55%, #f3e6d2 100%); }
+  .stage-canvas { position: absolute; inset: 0; }
+  .stage-canvas canvas { display: block; width: 100% !important; height: 100% !important; outline: none; }
+  .stage-hud { position: absolute; left: 22px; top: 20px; z-index: 2; pointer-events: none; max-width: 60%; }
+  .stage-kicker { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; }
+  .stage-title { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--text2); margin-top: 2px; }
+  .stage-value { font-family: var(--font-display); font-size: 40px; font-weight: 700; letter-spacing: -0.04em; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .stage-sub { font-size: 13px; color: var(--text2); margin-top: 4px; }
+  .stage-legend { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .stage-legend .cat-chip { background: rgba(255,255,255,0.75); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  .stage-hint {
+    position: absolute; right: 16px; bottom: 14px; z-index: 2; pointer-events: none;
+    font-size: 11px; color: var(--text3);
+    background: rgba(255,255,255,0.7); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    padding: 5px 10px; border-radius: 20px;
+  }
+  .stage-bubble {
+    position: absolute; left: 0; top: 0; z-index: 3; pointer-events: none;
+    background: rgba(255,255,255,0.92); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    color: var(--text); font-size: 13px; font-weight: 600; letter-spacing: -0.01em;
+    padding: 8px 13px; border-radius: 16px; white-space: nowrap;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    transform: translate(-50%, -100%) scale(0.85); opacity: 0;
+    transition: opacity 0.3s var(--ease), transform 0.4s var(--spring);
+    will-change: transform, left, top;
+  }
+  .stage-bubble::after {
+    content: ""; position: absolute; left: 50%; bottom: -6px; width: 12px; height: 12px;
+    background: inherit; transform: translateX(-50%) rotate(45deg); border-radius: 2px;
+  }
+  .stage-bubble.show { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+  .stage-fallback {
+    display: none; position: absolute; inset: 0; align-items: center; justify-content: flex-end; flex-direction: column;
+    padding-bottom: 40px; color: var(--text3); font-size: 13px; gap: 6px;
+  }
+  .stage-fallback .big { font-size: 56px; }
+  .stage.no-webgl .stage-fallback { display: flex; }
+  .stage.no-webgl .stage-hint { display: none; }
+  .stage-loading {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 1;
+    pointer-events: none; transition: opacity 0.5s var(--ease);
+  }
+  .stage.ready .stage-loading, .stage.no-webgl .stage-loading { opacity: 0; }
+
   /* ─── FORMS ─── */
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 12px;
-    margin-bottom: 14px;
-  }
-  .form-group label {
-    display: block;
-    font-size: 11px;
-    color: var(--text3);
-    margin-bottom: 5px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; font-weight: 500; }
   .form-group input, .form-group select {
-    width: 100%;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 9px 12px;
-    color: var(--text);
-    font-family: var(--font);
-    font-size: 13px;
-    transition: border-color 0.15s;
+    width: 100%; background: var(--bg3); border: 1px solid transparent; border-radius: var(--radius);
+    padding: 10px 12px; color: var(--text); font-family: var(--font); font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    -webkit-appearance: none; appearance: none; min-height: 42px;
   }
-  .form-group input:focus, .form-group select:focus {
-    outline: none;
-    border-color: rgba(74,222,128,0.5);
+  .form-group select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2386868b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px;
   }
+  .form-group input:focus, .form-group select:focus { outline: none; background-color: #fff; border-color: var(--blue); box-shadow: 0 0 0 4px var(--blue-bg); }
   .form-group input::placeholder { color: var(--text3); }
 
   /* ─── BUTTONS ─── */
   .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .btn {
-    padding: 8px 16px;
-    border-radius: var(--radius);
-    font-family: var(--font);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    border: 1px solid var(--border2);
-    background: transparent;
-    color: var(--text2);
-    transition: all 0.15s;
+    padding: 9px 18px; border-radius: 980px; font-family: var(--font); font-size: 13px; font-weight: 500;
+    cursor: pointer; border: none; background: var(--bg4); color: var(--text);
+    transition: background 0.2s, transform 0.25s var(--spring), opacity 0.2s;
   }
-  .btn:hover { background: var(--bg4); color: var(--text); }
-  .btn-primary { background: var(--green); color: #0f0f0f; border-color: var(--green); font-weight: 600; }
-  .btn-primary:hover { opacity: 0.85; background: var(--green); }
-  .btn-export { color: var(--amber); border-color: rgba(251,191,36,0.3); }
-  .btn-export:hover { background: var(--amber-bg); color: var(--amber); }
-  .btn-edit { color: var(--blue); border-color: rgba(96,165,250,0.3); font-size: 12px; padding: 4px 10px; }
-  .btn-edit:hover { background: var(--blue-bg); }
-  .btn-del { color: var(--red); border-color: rgba(248,113,113,0.2); font-size: 12px; padding: 4px 10px; }
-  .btn-del:hover { background: var(--red-bg); }
-  .btn-sm { font-size: 12px; padding: 5px 12px; }
+  .btn:hover { background: #dcdce1; }
+  .btn:active { transform: scale(0.96); }
+  .btn-primary { background: var(--blue); color: #fff; font-weight: 600; }
+  .btn-primary:hover { background: #0077ed; }
+  .btn-export { background: var(--amber-bg); color: #c76f00; }
+  .btn-export:hover { background: rgba(255,149,0,0.2); }
+  .btn-edit { background: var(--blue-bg); color: var(--blue); font-size: 12px; padding: 5px 12px; }
+  .btn-edit:hover { background: rgba(0,113,227,0.16); }
+  .btn-del { background: var(--red-bg); color: var(--red); font-size: 12px; padding: 5px 12px; }
+  .btn-del:hover { background: rgba(255,59,48,0.16); }
+  .btn-sm { font-size: 12px; padding: 6px 14px; }
 
   /* ─── PILLS / PERIOD ─── */
-  .pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+  .toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+  .pills { display: inline-flex; gap: 2px; padding: 3px; background: rgba(118,118,128,0.12); border-radius: 10px; margin-bottom: 0; flex-wrap: wrap; }
   .pill {
-    padding: 5px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 500;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text2);
-    cursor: pointer;
-    transition: all 0.15s;
-    font-family: var(--font);
+    padding: 6px 16px; border-radius: 8px; font-size: 13px; font-weight: 500;
+    border: none; background: transparent; color: var(--text); cursor: pointer;
+    transition: background 0.25s var(--ease), box-shadow 0.25s var(--ease); font-family: var(--font);
   }
-  .pill:hover { border-color: var(--border2); color: var(--text); }
-  .pill.active { background: var(--green); color: #0f0f0f; border-color: var(--green); }
+  .pill:hover { background: rgba(255,255,255,0.5); }
+  .pill.active { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 3px 8px rgba(0,0,0,0.06); font-weight: 600; }
+  #chart-pills { margin-bottom: 16px; }
 
-  /* ─── PERIOD NAV ─── */
   .period-nav {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 8px 10px;
-    width: fit-content;
-    flex-wrap: wrap;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg2); border-radius: 12px; padding: 5px 6px; width: fit-content; flex-wrap: wrap;
+    box-shadow: var(--shadow);
   }
   .btn-nav {
-    width: 26px; height: 26px;
-    background: var(--bg3);
-    border: 1px solid var(--border2);
-    border-radius: 6px;
-    color: var(--text2);
-    cursor: pointer;
-    font-size: 14px;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.15s;
-    flex-shrink: 0;
+    width: 30px; height: 30px; background: var(--bg3); border: none; border-radius: 8px; color: var(--text);
+    cursor: pointer; font-size: 17px; line-height: 1; display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s, transform 0.25s var(--spring); flex-shrink: 0;
   }
-  .btn-nav:hover { background: var(--bg4); color: var(--text); }
-  .period-label {
-    font-size: 12.5px;
-    font-weight: 500;
-    color: var(--text);
-    min-width: 150px;
-    text-align: center;
-    font-family: var(--mono);
-  }
+  .btn-nav:hover { background: var(--bg4); }
+  .btn-nav:active { transform: scale(0.9); }
+  .period-label { font-size: 14px; font-weight: 600; color: var(--text); min-width: 160px; text-align: center; letter-spacing: -0.01em; }
   .period-picker {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 5px 8px;
-    color: var(--text2);
-    font-family: var(--font);
-    font-size: 12px;
-    cursor: pointer;
+    background: var(--bg3); border: none; border-radius: 8px; padding: 6px 9px; color: var(--text2);
+    font-family: var(--font); font-size: 13px; cursor: pointer;
   }
 
   /* ─── FILTERS ─── */
   .filters {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 10px;
-    margin-bottom: 16px;
-    padding: 14px;
-    background: var(--bg3);
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;
+    margin-bottom: 14px; padding: 14px; background: var(--bg3); border-radius: 16px;
   }
+  .filters .form-group input, .filters .form-group select { background-color: #fff; }
 
   /* ─── TABLE ─── */
-  .table-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th {
-    text-align: left;
-    padding: 8px 12px;
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--text3);
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
+    text-align: left; padding: 8px 12px; font-size: 12px; font-weight: 500; color: var(--text3);
     border-bottom: 1px solid var(--border);
   }
-  td {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border);
-    vertical-align: middle;
-  }
+  td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
-  tr:hover td { background: var(--bg3); }
-  .amount { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+  tbody tr { transition: background 0.15s; }
+  tbody tr:hover td { background: rgba(0,0,0,0.02); }
+  .amount { font-weight: 600; font-variant-numeric: tabular-nums; }
   .amount.v { color: var(--green); }
   .amount.g { color: var(--red); }
   .person-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    background: var(--bg4);
-    border-radius: 20px;
-    padding: 2px 9px 2px 5px;
-    font-size: 11px;
-    color: var(--text2);
+    display: inline-flex; align-items: center; gap: 6px; background: var(--bg3); border-radius: 20px;
+    padding: 3px 10px 3px 4px; font-size: 12px; color: var(--text2); white-space: nowrap;
   }
   .avatar {
-    width: 18px; height: 18px;
-    border-radius: 50%;
-    background: var(--bg3);
-    border: 1px solid var(--border2);
+    width: 20px; height: 20px; border-radius: 50%;
+    background: linear-gradient(145deg, #c7c7cc, #aeaeb2);
     display: flex; align-items: center; justify-content: center;
-    font-size: 8px;
-    font-weight: 600;
-    color: var(--text);
-    text-transform: uppercase;
+    font-size: 9px; font-weight: 700; color: #fff; text-transform: uppercase;
   }
-  .empty {
-    text-align: center;
-    padding: 48px 20px;
-    color: var(--text3);
-    font-size: 13px;
-  }
-  .empty-icon { font-size: 28px; margin-bottom: 10px; }
+  .empty { text-align: center; padding: 44px 20px; color: var(--text3); font-size: 14px; }
+  .empty-icon { font-size: 30px; margin-bottom: 8px; }
 
   /* ─── MODAL ─── */
   .modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(4px);
-    z-index: 200;
-    display: flex; align-items: center; justify-content: center;
-    padding: 20px;
+    position: fixed; inset: 0; background: rgba(0,0,0,0.28);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px;
+    animation: fadeIn 0.25s var(--ease);
   }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   .modal {
-    background: var(--bg2);
-    border: 1px solid var(--border2);
-    border-radius: var(--radius-lg);
-    padding: 28px;
-    width: min(480px, 100%);
-    max-height: 90vh;
-    overflow-y: auto;
+    background: var(--bg2); border-radius: 24px; padding: 28px; width: min(500px, 100%);
+    max-height: 90vh; overflow-y: auto; box-shadow: 0 30px 80px rgba(0,0,0,0.25);
+    animation: modalIn 0.45s var(--spring);
   }
-  .modal-header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 22px;
-  }
-  .modal-title { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; }
+  @keyframes modalIn { from { opacity: 0; transform: scale(0.94) translateY(10px); } to { opacity: 1; transform: none; } }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .modal-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
   .btn-close {
-    width: 28px; height: 28px;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    cursor: pointer;
-    color: var(--text2);
-    font-size: 14px;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.15s;
+    width: 30px; height: 30px; background: var(--bg4); border: none; border-radius: 50%; cursor: pointer;
+    color: var(--text2); font-size: 13px; display: flex; align-items: center; justify-content: center; transition: background 0.2s;
   }
-  .btn-close:hover { background: var(--bg4); color: var(--text); }
+  .btn-close:hover { background: #dcdce1; }
 
   /* ─── CHARTS ─── */
-  .chart-wrap { position: relative; width: 100%; height: 260px; }
-  .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-  .cat-chip {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 500;
-    white-space: nowrap;
-  }
+  .chart-wrap { position: relative; width: 100%; height: 280px; }
+  .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+  .charts-grid .card { margin-bottom: 0; }
+  #sec-graficas .card-title { font-size: 16px; }
+  .cat-chip { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; }
 
   /* ─── TOAST ─── */
   .toast {
-    position: fixed;
-    bottom: 24px; right: 24px;
-    background: var(--bg2);
-    border: 1px solid var(--border2);
-    border-radius: var(--radius);
-    padding: 12px 16px;
-    font-size: 13px;
-    z-index: 300;
-    transform: translateY(80px);
-    opacity: 0;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    display: flex; align-items: center; gap: 8px;
-    min-width: 220px;
+    position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom));
+    background: rgba(29,29,31,0.92); color: #fff;
+    -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+    border-radius: 980px; padding: 11px 18px; font-size: 14px; font-weight: 500; z-index: 300;
+    transform: translate(-50%, 90px); opacity: 0;
+    transition: transform 0.45s var(--spring), opacity 0.3s var(--ease);
+    display: flex; align-items: center; gap: 9px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    pointer-events: none; white-space: nowrap;
   }
-  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.show { transform: translate(-50%, 0); opacity: 1; }
   .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
   /* ─── LOADING ─── */
-  .loading-screen {
-    min-height: calc(100vh - 56px);
-    display: flex; align-items: center; justify-content: center;
-    flex-direction: column; gap: 14px; color: var(--text3);
-  }
-  .spinner {
-    width: 28px; height: 28px;
-    border: 2px solid var(--border);
-    border-top-color: var(--green);
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-  }
+  .loading-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; color: var(--text3); }
+  .spinner { width: 26px; height: 26px; border: 2.5px solid var(--bg4); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  @media(max-width: 600px) {
-    .metrics { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 600px) {
+    .metrics { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .metric { padding: 14px; border-radius: 16px; }
+    .metric-value { font-size: 20px; }
     .charts-grid { grid-template-columns: 1fr; }
     .header { padding: 0 14px; }
-    .container { padding: 16px 12px; }
-    .brand-name { font-size: 13px; }
+    .container { padding: 16px 12px 40px; }
+    .brand-name { font-size: 14px; }
+    .brand-name span { display: none; }
+    .stage { height: auto; border-radius: 22px; display: flex; flex-direction: column; }
+    .stage-hud { position: relative; left: 0; top: 0; max-width: none; padding: 16px 18px 0; order: -1; }
+    .stage-canvas { position: relative; inset: auto; height: 290px; flex-shrink: 0; }
+    .stage-fallback { position: absolute; }
+    .stage-value { font-size: 30px; }
+    .stage-hint { display: none; }
+    .card { padding: 18px; border-radius: 20px; }
+    .nav-btn { padding: 7px 14px; }
+    .period-label { min-width: 120px; }
+    .setup-card { padding: 32px 22px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
 </style>
 </head>
@@ -559,22 +428,26 @@
 
 <!-- HEADER -->
 <div class="header" id="main-header" style="display:none">
-  <div class="header-brand">
-    <div class="brand-icon">📊</div>
-    <div class="brand-name">Ventas<span>&</span>Gastos</div>
-  </div>
-  <div class="sync-badge">
-    <div class="sync-dot" id="sync-dot"></div>
-    <span id="sync-label">conectando…</span>
+  <div class="header-inner">
+    <div class="header-brand">
+      <div class="brand-icon">OP</div>
+      <div class="brand-name">Ventas &amp; Gastos <span>· One Print 3D</span></div>
+    </div>
+    <div class="sync-badge">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-label">conectando…</span>
+    </div>
   </div>
 </div>
 
 <!-- NAV -->
-<div class="nav" id="main-nav" style="display:none">
-  <button class="nav-btn active" onclick="showSection('dashboard',this)">Resumen</button>
-  <button class="nav-btn" onclick="showSection('ventas',this)">Ventas</button>
-  <button class="nav-btn" onclick="showSection('gastos',this)">Gastos</button>
-  <button class="nav-btn" onclick="showSection('graficas',this)">Gráficas</button>
+<div class="nav-wrap" id="main-nav" style="display:none">
+  <div class="nav">
+    <button class="nav-btn active" onclick="showSection('dashboard',this)">Resumen</button>
+    <button class="nav-btn" onclick="showSection('ventas',this)">Ventas</button>
+    <button class="nav-btn" onclick="showSection('gastos',this)">Gastos</button>
+    <button class="nav-btn" onclick="showSection('graficas',this)">Gráficas</button>
+  </div>
 </div>
 
 <!-- SETUP SCREEN -->
@@ -601,7 +474,7 @@
       <div class="setup-step">
         <div class="step-num">3</div>
         <div class="step-content">
-          <p style="font-size:13px;color:var(--text2);margin-bottom:4px">En Configuración del proyecto → Tus apps → Agrega una app web. Copia el <code style="color:var(--green);font-family:var(--mono)">apiKey</code>.</p>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:4px">En Configuración del proyecto → Tus apps → Agrega una app web. Copia el <code style="color:var(--blue);font-family:var(--mono)">apiKey</code>.</p>
         </div>
       </div>
       <div class="setup-step">
@@ -620,11 +493,11 @@
       </div>
     </div>
 
-    <button class="btn-connect" onclick="conectarFirebase()">Conectar y empezar →</button>
+    <button class="btn-connect" onclick="conectarFirebase()">Conectar y empezar</button>
     <div class="setup-error" id="setup-error"></div>
 
     <hr class="divider">
-    <p class="demo-note">¿Solo quieres probar la app? <a href="#" onclick="usarModoDemo()">Usar modo demo</a> (datos locales, sin sincronización)</p>
+    <p class="demo-note">¿Solo quieres probar la app? <a href="#" onclick="usarModoDemo();return false;">Usar modo demo</a> (datos locales, sin sincronización)</p>
   </div>
 </div>
 
@@ -640,30 +513,50 @@
 
   <!-- DASHBOARD -->
   <div class="section active" id="sec-dashboard">
-    <div class="pills" id="dash-pills">
-      <button class="pill active" onclick="setPeriod('dia',this)">Día</button>
-      <button class="pill" onclick="setPeriod('semana',this)">Semana</button>
-      <button class="pill" onclick="setPeriod('mes',this)">Mes</button>
-      <button class="pill" onclick="setPeriod('todo',this)">Todo</button>
+    <div class="toolbar">
+      <div class="pills" id="dash-pills">
+        <button class="pill active" onclick="setPeriod('dia',this)">Día</button>
+        <button class="pill" onclick="setPeriod('semana',this)">Semana</button>
+        <button class="pill" onclick="setPeriod('mes',this)">Mes</button>
+        <button class="pill" onclick="setPeriod('todo',this)">Todo</button>
+      </div>
+      <div class="period-nav" id="dash-period-nav">
+        <button class="btn-nav" onclick="shiftDashPeriod(-1)" aria-label="Periodo anterior">‹</button>
+        <div class="period-label" id="dash-period-label"></div>
+        <button class="btn-nav" onclick="shiftDashPeriod(1)" aria-label="Periodo siguiente">›</button>
+        <input type="date" id="dash-picker" class="period-picker" onchange="onDashPickerChange(this.value)">
+      </div>
     </div>
-    <div class="period-nav" id="dash-period-nav">
-      <button class="btn-nav" onclick="shiftDashPeriod(-1)">‹</button>
-      <div class="period-label" id="dash-period-label"></div>
-      <button class="btn-nav" onclick="shiftDashPeriod(1)">›</button>
-      <input type="date" id="dash-picker" class="period-picker" onchange="onDashPickerChange(this.value)">
+
+    <div class="stage-slot" data-slot="dashboard">
+      <div class="stage" id="stage" data-mode="dashboard">
+        <div class="stage-canvas" id="stage-canvas"></div>
+        <div class="stage-loading"><div class="spinner"></div></div>
+        <div class="stage-hud">
+          <div class="stage-kicker" id="stage-kicker"></div>
+          <div class="stage-title" id="stage-title"></div>
+          <div class="stage-value" id="stage-value"></div>
+          <div class="stage-sub" id="stage-sub"></div>
+          <div class="stage-legend" id="stage-legend"></div>
+        </div>
+        <div class="stage-bubble" id="stage-bubble"></div>
+        <div class="stage-hint">Arrastra para girar · Toca al personaje</div>
+        <div class="stage-fallback"><div class="big">🧑‍🔧</div><div>Vista 3D no disponible en este dispositivo</div></div>
+      </div>
     </div>
+
     <div class="metrics" id="dash-metrics"></div>
     <div class="card">
       <div class="card-header">
         <div class="card-title">Últimas ventas</div>
-        <button class="btn btn-sm" onclick="showSection('ventas',document.querySelectorAll('.nav-btn')[1])">Ver todas →</button>
+        <button class="btn btn-sm" onclick="showSection('ventas',document.querySelectorAll('.nav-btn')[1])">Ver todas</button>
       </div>
       <div id="dash-ventas"></div>
     </div>
     <div class="card">
       <div class="card-header">
         <div class="card-title">Últimos gastos</div>
-        <button class="btn btn-sm" onclick="showSection('gastos',document.querySelectorAll('.nav-btn')[2])">Ver todos →</button>
+        <button class="btn btn-sm" onclick="showSection('gastos',document.querySelectorAll('.nav-btn')[2])">Ver todos</button>
       </div>
       <div id="dash-gastos"></div>
     </div>
@@ -671,25 +564,26 @@
 
   <!-- VENTAS -->
   <div class="section" id="sec-ventas">
+    <div class="stage-slot" data-slot="ventas"></div>
     <div class="card">
       <div class="card-header">
         <div class="card-title">Registrar venta</div>
       </div>
       <div class="form-grid">
         <div class="form-group"><label>Fecha</label><input type="date" id="v-fecha"></div>
-        <div class="form-group"><label>Monto ($)</label><input type="number" id="v-monto" placeholder="0.00" min="0" step="0.01"></div>
-        <div class="form-group"><label>Descripción del producto</label><input type="text" id="v-desc" placeholder="Ej: Playera talla M roja"></div>
+        <div class="form-group"><label>Monto ($)</label><input type="number" id="v-monto" placeholder="0.00" min="0" step="0.01" inputmode="decimal"></div>
+        <div class="form-group"><label>Descripción del producto</label><input type="text" id="v-desc" placeholder="Ej: Figura impresa 15 cm"></div>
         <div class="form-group"><label>Vendedor</label><input type="text" id="v-vendedor" placeholder="Nombre del vendedor"></div>
       </div>
       <div class="actions">
-        <button class="btn btn-primary" onclick="addVenta()">+ Agregar venta</button>
-        <button class="btn btn-export" onclick="exportar('ventas')">↓ Exportar Excel</button>
+        <button class="btn btn-primary" onclick="addVenta()">Agregar venta</button>
+        <button class="btn btn-export" onclick="exportar('ventas')">Exportar Excel</button>
       </div>
     </div>
     <div class="card">
       <div class="card-header">
         <div class="card-title">Registro de ventas</div>
-        <span id="v-count" style="font-size:12px;color:var(--text3);font-family:var(--mono)"></span>
+        <span id="v-count" style="font-size:13px;color:var(--text3)"></span>
       </div>
       <div class="filters">
         <div class="form-group"><label>Buscar</label><input type="text" id="v-search" placeholder="Producto o vendedor" oninput="renderVentas()"></div>
@@ -704,13 +598,14 @@
 
   <!-- GASTOS -->
   <div class="section" id="sec-gastos">
+    <div class="stage-slot" data-slot="gastos"></div>
     <div class="card">
       <div class="card-header">
         <div class="card-title">Registrar gasto</div>
       </div>
       <div class="form-grid">
         <div class="form-group"><label>Fecha</label><input type="date" id="g-fecha"></div>
-        <div class="form-group"><label>Monto ($)</label><input type="number" id="g-monto" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="form-group"><label>Monto ($)</label><input type="number" id="g-monto" placeholder="0.00" min="0" step="0.01" inputmode="decimal"></div>
         <div class="form-group"><label>Categoría</label>
           <select id="g-categoria">
             <option value="">Selecciona...</option>
@@ -720,18 +615,18 @@
             <option value="servicio">Pago por servicio</option>
           </select>
         </div>
-        <div class="form-group"><label>Descripción del producto</label><input type="text" id="g-desc" placeholder="Ej: Caja de cartón grande"></div>
+        <div class="form-group"><label>Descripción del producto</label><input type="text" id="g-desc" placeholder="Ej: Filamento PLA 1 kg"></div>
         <div class="form-group"><label>Comprador</label><input type="text" id="g-comprador" placeholder="Nombre del comprador"></div>
       </div>
       <div class="actions">
-        <button class="btn btn-primary" onclick="addGasto()">+ Agregar gasto</button>
-        <button class="btn btn-export" onclick="exportar('gastos')">↓ Exportar Excel</button>
+        <button class="btn btn-primary" onclick="addGasto()">Agregar gasto</button>
+        <button class="btn btn-export" onclick="exportar('gastos')">Exportar Excel</button>
       </div>
     </div>
     <div class="card">
       <div class="card-header">
         <div class="card-title">Registro de gastos</div>
-        <span id="g-count" style="font-size:12px;color:var(--text3);font-family:var(--mono)"></span>
+        <span id="g-count" style="font-size:13px;color:var(--text3)"></span>
       </div>
       <div class="filters">
         <div class="form-group"><label>Buscar</label><input type="text" id="g-search" placeholder="Producto o comprador" oninput="renderGastos()"></div>
@@ -776,7 +671,7 @@
       <div class="chart-wrap" id="chart-cat-wrap"><canvas id="chart-categorias"></canvas></div>
       <div class="metrics" id="chart-cat-metrics" style="display:none"></div>
     </div>
-    <div class="charts-grid">
+    <div class="charts-grid" style="margin-bottom:18px">
       <div class="card">
         <div class="card-title" style="margin-bottom:16px">Ventas por vendedor</div>
         <div class="chart-wrap"><canvas id="chart-vendedores"></canvas></div>
@@ -805,11 +700,11 @@
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title" id="modal-title">Editar registro</div>
-      <button class="btn-close" onclick="closeModal()">✕</button>
+      <button class="btn-close" onclick="closeModal()" aria-label="Cerrar">✕</button>
     </div>
     <div class="form-grid">
       <div class="form-group"><label>Fecha</label><input type="date" id="m-fecha"></div>
-      <div class="form-group"><label>Monto ($)</label><input type="number" id="m-monto" step="0.01"></div>
+      <div class="form-group"><label>Monto ($)</label><input type="number" id="m-monto" step="0.01" inputmode="decimal"></div>
       <div class="form-group" id="m-categoria-row" style="display:none">
         <label>Categoría</label>
         <select id="m-categoria">
@@ -856,8 +751,9 @@ let listeners = {};
 const today = () => new Date().toISOString().split('T')[0];
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
 const fmt = n => '$' + parseFloat(n||0).toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2});
-const initials = s => s.trim().split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+const initials = s => String(s||'').trim().split(/\s+/).filter(Boolean).map(w=>w[0]).join('').slice(0,2).toUpperCase();
 const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const toISO = d => { const x = new Date(d); x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().split('T')[0]; };
 const parseISO = s => new Date(s + 'T00:00:00');
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -877,13 +773,13 @@ function getWeekRange(d) {
 // CATEGORÍAS DE GASTOS
 // ══════════════════════════════════════
 const CATEGORIAS = [
-  { id: 'nomina', label: 'Pago de nómina', color: '#f87171' },
-  { id: 'insumo', label: 'Insumo', color: '#fbbf24' },
-  { id: 'inversion', label: 'Inversión', color: '#60a5fa' },
-  { id: 'servicio', label: 'Pago por servicio', color: '#a78bfa' }
+  { id: 'nomina', label: 'Pago de nómina', color: '#ff2d55' },
+  { id: 'insumo', label: 'Insumo', color: '#ff9500' },
+  { id: 'inversion', label: 'Inversión', color: '#007aff' },
+  { id: 'servicio', label: 'Pago por servicio', color: '#af52de' }
 ];
 const CAT_IDS = new Set(CATEGORIAS.map(c => c.id));
-function catInfo(id) { return CATEGORIAS.find(c => c.id === id) || { id: null, label: 'Sin categoría', color: '#666' }; }
+function catInfo(id) { return CATEGORIAS.find(c => c.id === id) || { id: null, label: 'Sin categoría', color: '#8e8e93' }; }
 function catLabel(id) { return catInfo(id).label; }
 function catColor(id) { return catInfo(id).color; }
 function matchesCategoria(item, catId) {
@@ -893,11 +789,11 @@ function matchesCategoria(item, catId) {
 // Incluye "Sin categoría" solo si hay gastos antiguos sin clasificar
 function categoriasConDatos(allG) {
   const list = [...CATEGORIAS];
-  if (allG.some(i => !CAT_IDS.has(i.categoria))) list.push({ id: null, label: 'Sin categoría', color: '#666' });
+  if (allG.some(i => !CAT_IDS.has(i.categoria))) list.push({ id: null, label: 'Sin categoría', color: '#8e8e93' });
   return list;
 }
 
-function toast(msg, color='#4ade80') {
+function toast(msg, color='#34c759') {
   const el = document.getElementById('toast');
   document.getElementById('toast-msg').textContent = msg;
   document.getElementById('toast-dot').style.background = color;
@@ -1072,6 +968,7 @@ function showSection(id, btn) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('sec-' + id).classList.add('active');
   if (btn) btn.classList.add('active');
+  mountStage(id);
   if (id === 'dashboard') renderDashboard();
   else if (id === 'ventas') renderVentas();
   else if (id === 'gastos') renderGastos();
@@ -1152,7 +1049,7 @@ function filterByPeriod(items, period, refDate) {
 
 function applyFilters(items, search, from, to, min, max, categoria) {
   return items.filter(i => {
-    if (search && !i.desc.toLowerCase().includes(search.toLowerCase()) && !i.person.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search && !String(i.desc||'').toLowerCase().includes(search.toLowerCase()) && !String(i.person||'').toLowerCase().includes(search.toLowerCase())) return false;
     if (from && i.fecha < from) return false;
     if (to && i.fecha > to) return false;
     if (min !== '' && !isNaN(min) && parseFloat(i.monto) < parseFloat(min)) return false;
@@ -1175,8 +1072,8 @@ function renderTableHTML(items, type, compact=false) {
       <td style="color:var(--text3);font-family:var(--mono);font-size:12px">${i.fecha}</td>
       <td><span class="amount ${amtClass}">${fmt(i.monto)}</span></td>
       ${isVenta ? '' : `<td><span class="cat-chip" style="background:${catColor(i.categoria)}22;color:${catColor(i.categoria)}">${catLabel(i.categoria)}</span></td>`}
-      <td style="max-width:220px">${i.desc}</td>
-      <td><span class="person-chip"><span class="avatar">${initials(i.person)}</span>${i.person}</span></td>
+      <td style="max-width:240px">${esc(i.desc)}</td>
+      <td><span class="person-chip"><span class="avatar">${esc(initials(i.person||'?'))}</span>${esc(i.person)}</span></td>
       ${compact ? '' : `<td><div class="actions"><button class="btn btn-edit" onclick="openEdit('${type}','${i.id}')">Editar</button><button class="btn btn-del" onclick="del('${type}','${i.id}')">Eliminar</button></div></td>`}
     </tr>`).join('');
   return `<table>
@@ -1200,15 +1097,20 @@ function renderDashboard() {
   const net = tv - tg;
 
   document.getElementById('dash-metrics').innerHTML = `
-    <div class="metric"><div class="metric-label">Total ventas</div><div class="metric-value green">${fmt(tv)}</div></div>
-    <div class="metric"><div class="metric-label">Total gastos</div><div class="metric-value red">${fmt(tg)}</div></div>
-    <div class="metric"><div class="metric-label">Utilidad neta</div><div class="metric-value ${net>=0?'blue':'red'}">${fmt(net)}</div></div>
-    <div class="metric"><div class="metric-label">Transacciones</div><div class="metric-value amber">${ventas.length+gastos.length}</div></div>`;
+    <div class="metric"><div class="metric-label">Total ventas</div><div class="metric-value green" id="mv-tv"></div></div>
+    <div class="metric"><div class="metric-label">Total gastos</div><div class="metric-value red" id="mv-tg"></div></div>
+    <div class="metric"><div class="metric-label">Utilidad neta</div><div class="metric-value ${net>=0?'blue':'red'}" id="mv-net"></div></div>
+    <div class="metric"><div class="metric-label">Transacciones</div><div class="metric-value amber" id="mv-tx"></div></div>`;
+  countUp(document.getElementById('mv-tv'), tv, fmt, 'tv');
+  countUp(document.getElementById('mv-tg'), tg, fmt, 'tg');
+  countUp(document.getElementById('mv-net'), net, fmt, 'net');
+  countUp(document.getElementById('mv-tx'), ventas.length + gastos.length, n => String(Math.round(n)), 'tx');
 
   const vRecent = [...ventas].sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,5);
   const gRecent = [...gastos].sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,5);
   document.getElementById('dash-ventas').innerHTML = renderTableHTML(vRecent,'ventas',true);
   document.getElementById('dash-gastos').innerHTML = renderTableHTML(gRecent,'gastos',true);
+  pushStage();
 }
 
 // ══════════════════════════════════════
@@ -1225,6 +1127,7 @@ function renderVentas() {
   );
   document.getElementById('ventas-table').innerHTML = renderTableHTML(filtered,'ventas');
   document.getElementById('v-count').textContent = filtered.length + ' registros';
+  pushStage();
 }
 
 async function addVenta() {
@@ -1232,7 +1135,7 @@ async function addVenta() {
   const monto = document.getElementById('v-monto').value;
   const desc = document.getElementById('v-desc').value.trim();
   const person = document.getElementById('v-vendedor').value.trim();
-  if (!fecha||!monto||!desc||!person) { toast('Completa todos los campos','#f87171'); return; }
+  if (!fecha||!monto||!desc||!person) { toast('Completa todos los campos','#ff3b30'); return; }
   const id = uid();
   await writeData('ventas', id, {id, fecha, monto: parseFloat(monto), desc, person, ts: Date.now()});
   document.getElementById('v-monto').value = '';
@@ -1240,6 +1143,7 @@ async function addVenta() {
   document.getElementById('v-vendedor').value = '';
   document.getElementById('v-fecha').value = today();
   toast('Venta registrada');
+  stageEvent('venta', { monto: parseFloat(monto) });
 }
 
 // ══════════════════════════════════════
@@ -1257,6 +1161,7 @@ function renderGastos() {
   );
   document.getElementById('gastos-table').innerHTML = renderTableHTML(filtered,'gastos');
   document.getElementById('g-count').textContent = filtered.length + ' registros';
+  pushStage();
 }
 
 async function addGasto() {
@@ -1265,7 +1170,7 @@ async function addGasto() {
   const categoria = document.getElementById('g-categoria').value;
   const desc = document.getElementById('g-desc').value.trim();
   const person = document.getElementById('g-comprador').value.trim();
-  if (!fecha||!monto||!categoria||!desc||!person) { toast('Completa todos los campos','#f87171'); return; }
+  if (!fecha||!monto||!categoria||!desc||!person) { toast('Completa todos los campos','#ff3b30'); return; }
   const id = uid();
   await writeData('gastos', id, {id, fecha, monto: parseFloat(monto), categoria, desc, person, ts: Date.now()});
   document.getElementById('g-monto').value = '';
@@ -1274,6 +1179,7 @@ async function addGasto() {
   document.getElementById('g-comprador').value = '';
   document.getElementById('g-fecha').value = today();
   toast('Gasto registrado');
+  stageEvent('gasto', { categoria, monto: parseFloat(monto) });
 }
 
 // ══════════════════════════════════════
@@ -1305,8 +1211,8 @@ async function saveEdit() {
   const desc = document.getElementById('m-desc').value.trim();
   const person = document.getElementById('m-person').value.trim();
   const categoria = document.getElementById('m-categoria').value;
-  if (!fecha||!monto||!desc||!person) { toast('Completa todos los campos','#f87171'); return; }
-  if (editType === 'gastos' && !categoria) { toast('Selecciona una categoría','#f87171'); return; }
+  if (!fecha||!monto||!desc||!person) { toast('Completa todos los campos','#ff3b30'); return; }
+  if (editType === 'gastos' && !categoria) { toast('Selecciona una categoría','#ff3b30'); return; }
   const orig = getData(editType).find(i => i.id === editId);
   const updated = {...orig, fecha, monto: parseFloat(monto), desc, person};
   if (editType === 'gastos') updated.categoria = categoria;
@@ -1318,7 +1224,7 @@ async function saveEdit() {
 async function del(type, id) {
   if (!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) return;
   await deleteData(type, id);
-  toast('Registro eliminado', '#f87171');
+  toast('Registro eliminado', '#ff3b30');
 }
 
 function closeModal() {
@@ -1339,7 +1245,7 @@ function exportar(type) {
     'Descripción': i.desc,
     [isVenta ? 'Vendedor' : 'Comprador']: i.person
   }));
-  if (!data.length) { toast('No hay datos para exportar', '#fbbf24'); return; }
+  if (!data.length) { toast('No hay datos para exportar', '#ff9500'); return; }
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, isVenta ? 'Ventas' : 'Gastos');
@@ -1425,7 +1331,7 @@ function renderHistorico(allV, allG) {
     return {
       label: c.label,
       data: months.map(m => sumMonto(itemsCat.filter(i => { const d=parseISO(i.fecha); return d.getFullYear()===m.getFullYear() && d.getMonth()===m.getMonth(); }))),
-      borderColor: c.color, backgroundColor: c.color, pointBackgroundColor: c.color, pointBorderColor: '#0f0f0f',
+      borderColor: c.color, backgroundColor: c.color, pointBackgroundColor: c.color, pointBorderColor: '#ffffff',
       pointRadius: 3, pointHoverRadius: 5, borderWidth: 1.5, borderDash: [5,3], tension: 0.25, fill: false
     };
   });
@@ -1436,17 +1342,17 @@ function renderHistorico(allV, allG) {
     data: {
       labels,
       datasets: [
-        { label: 'Ventas', data: vData, borderColor: '#4ade80', backgroundColor: '#4ade80', pointBackgroundColor: '#4ade80', pointBorderColor: '#0f0f0f', pointRadius: 4, pointHoverRadius: 6, borderWidth: 2, tension: 0.25, fill: false },
-        { label: 'Gastos', data: gData, borderColor: '#f87171', backgroundColor: '#f87171', pointBackgroundColor: '#f87171', pointBorderColor: '#0f0f0f', pointRadius: 4, pointHoverRadius: 6, borderWidth: 2, tension: 0.25, fill: false },
+        { label: 'Ventas', data: vData, borderColor: '#34c759', backgroundColor: '#34c759', pointBackgroundColor: '#34c759', pointBorderColor: '#ffffff', pointRadius: 4, pointHoverRadius: 6, borderWidth: 2, tension: 0.25, fill: false },
+        { label: 'Gastos', data: gData, borderColor: '#ff3b30', backgroundColor: '#ff3b30', pointBackgroundColor: '#ff3b30', pointBorderColor: '#ffffff', pointRadius: 4, pointHoverRadius: 6, borderWidth: 2, tension: 0.25, fill: false },
         ...catDatasets
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: '#999', font: { size: 12 } } } },
+      plugins: { legend: { labels: { color: '#515154', font: { size: 12 } } } },
       scales: {
-        x: { ticks: { color: '#666', font: { size: 10 }, maxRotation: 45, autoSkip: labels.length > 14 }, grid: { color: 'rgba(255,255,255,0.05)' } },
-        y: { ticks: { color: '#666', callback: v => '$'+v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+        x: { ticks: { color: '#86868b', font: { size: 10 }, maxRotation: 45, autoSkip: labels.length > 14 }, grid: { color: 'rgba(0,0,0,0.06)' } },
+        y: { ticks: { color: '#86868b', callback: v => '$'+v.toLocaleString() }, grid: { color: 'rgba(0,0,0,0.06)' }, beginAtZero: true }
       }
     }
   });
@@ -1505,16 +1411,16 @@ function renderCharts() {
       data: {
         labels,
         datasets: [
-          { label: 'Ventas', data: vData, backgroundColor: 'rgba(74,222,128,0.6)', borderColor: '#4ade80', borderWidth: 1, borderRadius: 4 },
-          { label: 'Gastos', data: gData, backgroundColor: 'rgba(248,113,113,0.6)', borderColor: '#f87171', borderWidth: 1, borderRadius: 4 }
+          { label: 'Ventas', data: vData, backgroundColor: 'rgba(52,199,89,0.78)', borderColor: '#34c759', borderWidth: 1, borderRadius: 6, borderSkipped: false },
+          { label: 'Gastos', data: gData, backgroundColor: 'rgba(255,59,48,0.72)', borderColor: '#ff3b30', borderWidth: 1, borderRadius: 6, borderSkipped: false }
         ]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#999', font: { size: 12 } } } },
+        plugins: { legend: { labels: { color: '#515154', font: { size: 12 } } } },
         scales: {
-          x: { ticks: { color: '#666', font: { size: 10 }, maxRotation: 45, autoSkip: labels.length > 14 }, grid: { color: 'rgba(255,255,255,0.05)' } },
-          y: { ticks: { color: '#666', callback: v => '$'+v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+          x: { ticks: { color: '#86868b', font: { size: 10 }, maxRotation: 45, autoSkip: labels.length > 14 }, grid: { color: 'rgba(0,0,0,0.06)' } },
+          y: { ticks: { color: '#86868b', callback: v => '$'+v.toLocaleString() }, grid: { color: 'rgba(0,0,0,0.06)' }, beginAtZero: true }
         }
       }
     });
@@ -1565,7 +1471,7 @@ function renderCharts() {
         backgroundColor: c.color + '99',
         borderColor: c.color,
         borderWidth: 1,
-        borderRadius: 3
+        borderRadius: 4
       };
     });
 
@@ -1575,16 +1481,16 @@ function renderCharts() {
       data: { labels: catLabels, datasets: catDatasets },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#999', font: { size: 11 } } } },
+        plugins: { legend: { labels: { color: '#515154', font: { size: 11 } } } },
         scales: {
-          x: { stacked: true, ticks: { color: '#666', font: { size: 10 }, maxRotation: 45, autoSkip: catLabels.length > 14 }, grid: { color: 'rgba(255,255,255,0.05)' } },
-          y: { stacked: true, ticks: { color: '#666', callback: v => '$'+v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+          x: { stacked: true, ticks: { color: '#86868b', font: { size: 10 }, maxRotation: 45, autoSkip: catLabels.length > 14 }, grid: { color: 'rgba(0,0,0,0.06)' } },
+          y: { stacked: true, ticks: { color: '#86868b', callback: v => '$'+v.toLocaleString() }, grid: { color: 'rgba(0,0,0,0.06)' }, beginAtZero: true }
         }
       }
     });
   }
 
-  const pal = ['#4ade80','#60a5fa','#fbbf24','#f87171','#a78bfa','#34d399','#fb923c'];
+  const pal = ['#34c759','#007aff','#ff9500','#ff3b30','#af52de','#5ac8fa','#ffcc00'];
   const vPerson = {}, gPerson = {};
   allV.forEach(i => { vPerson[i.person] = (vPerson[i.person]||0) + parseFloat(i.monto||0); });
   allG.forEach(i => { gPerson[i.person] = (gPerson[i.person]||0) + parseFloat(i.monto||0); });
@@ -1593,24 +1499,24 @@ function renderCharts() {
   const vKeys = Object.keys(vPerson);
   charts.vendedores = new Chart(document.getElementById('chart-vendedores'), {
     type: 'doughnut',
-    data: { labels: vKeys, datasets: [{ data: vKeys.map(k=>vPerson[k]), backgroundColor: pal, borderWidth: 0 }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#999', font: { size: 11 }, padding: 10 } } } }
+    data: { labels: vKeys, datasets: [{ data: vKeys.map(k=>vPerson[k]), backgroundColor: pal, borderWidth: 2, borderColor: '#ffffff', hoverOffset: 8 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#515154', font: { size: 11 }, padding: 10 } } } }
   });
 
   if (charts.compradores) charts.compradores.destroy();
   const gKeys = Object.keys(gPerson);
   charts.compradores = new Chart(document.getElementById('chart-compradores'), {
     type: 'doughnut',
-    data: { labels: gKeys, datasets: [{ data: gKeys.map(k=>gPerson[k]), backgroundColor: pal, borderWidth: 0 }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#999', font: { size: 11 }, padding: 10 } } } }
+    data: { labels: gKeys, datasets: [{ data: gKeys.map(k=>gPerson[k]), backgroundColor: pal, borderWidth: 2, borderColor: '#ffffff', hoverOffset: 8 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#515154', font: { size: 11 }, padding: 10 } } } }
   });
 
   if (charts.catProporcion) charts.catProporcion.destroy();
   const catTotals = cats.map(c => sumMonto(allG.filter(i => matchesCategoria(i, c.id))));
   charts.catProporcion = new Chart(document.getElementById('chart-cat-proporcion'), {
     type: 'doughnut',
-    data: { labels: cats.map(c=>c.label), datasets: [{ data: catTotals, backgroundColor: cats.map(c=>c.color), borderWidth: 0 }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#999', font: { size: 11 }, padding: 10 } } } }
+    data: { labels: cats.map(c=>c.label), datasets: [{ data: catTotals, backgroundColor: cats.map(c=>c.color), borderWidth: 2, borderColor: '#ffffff', hoverOffset: 8 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#515154', font: { size: 11 }, padding: 10 } } } }
   });
 
   // ─── Gasto por persona: insumo, inversión, servicio ───
@@ -1637,7 +1543,7 @@ function renderCharts() {
         backgroundColor: c.color + '99',
         borderColor: c.color,
         borderWidth: 1,
-        borderRadius: 3
+        borderRadius: 4
       };
     });
 
@@ -1647,14 +1553,1045 @@ function renderCharts() {
       data: { labels: personas, datasets: datasetsPersona },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#999', font: { size: 11 } } } },
+        plugins: { legend: { labels: { color: '#515154', font: { size: 11 } } } },
         scales: {
-          x: { stacked: true, ticks: { color: '#666', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
-          y: { stacked: true, ticks: { color: '#666', callback: v => '$'+v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+          x: { stacked: true, ticks: { color: '#86868b', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+          y: { stacked: true, ticks: { color: '#86868b', callback: v => '$'+v.toLocaleString() }, grid: { color: 'rgba(0,0,0,0.06)' }, beginAtZero: true }
         }
       }
     });
   }
+}
+
+// ══════════════════════════════════════
+// ESTILO APPLE: números animados, tarjetas con inclinación, gráficas
+// ══════════════════════════════════════
+const REDUCED_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const __prevVals = {};
+function countUp(el, to, formatter, key) {
+  if (!el) return;
+  to = Number(to) || 0;
+  const from = key in __prevVals ? __prevVals[key] : 0;
+  __prevVals[key] = to;
+  if (REDUCED_MOTION || from === to || document.hidden) { el.textContent = formatter(to); return; }
+  const t0 = performance.now(), dur = 750;
+  if (el.__raf) cancelAnimationFrame(el.__raf);
+  const step = now => {
+    const k = Math.min(1, (now - t0) / dur);
+    const e = 1 - Math.pow(1 - k, 3);
+    el.textContent = formatter(from + (to - from) * e);
+    if (k < 1) el.__raf = requestAnimationFrame(step);
+  };
+  el.textContent = formatter(from);
+  el.__raf = requestAnimationFrame(step);
+}
+
+// Inclinación suave de las tarjetas de métricas (solo con mouse)
+(function initTilt() {
+  if (REDUCED_MOTION) return;
+  let active = null;
+  document.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse') return;
+    const card = e.target.closest && e.target.closest('.metric');
+    if (active && active !== card) { active.classList.remove('tilting'); active.style.removeProperty('--rx'); active.style.removeProperty('--ry'); active = null; }
+    if (!card) return;
+    const r = card.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    card.style.setProperty('--rx', (-y * 8).toFixed(2) + 'deg');
+    card.style.setProperty('--ry', (x * 10).toFixed(2) + 'deg');
+    card.classList.add('tilting');
+    active = card;
+  }, { passive: true });
+  document.addEventListener('pointerleave', () => {
+    if (active) { active.classList.remove('tilting'); active.style.removeProperty('--rx'); active.style.removeProperty('--ry'); active = null; }
+  });
+})();
+
+if (window.Chart) {
+  Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif';
+  Chart.defaults.color = '#515154';
+  Chart.defaults.plugins.legend.labels.usePointStyle = true;
+  Chart.defaults.plugins.legend.labels.pointStyle = 'circle';
+  Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(29,29,31,0.92)';
+  Chart.defaults.plugins.tooltip.cornerRadius = 10;
+  Chart.defaults.plugins.tooltip.padding = 10;
+  Chart.defaults.plugins.tooltip.titleFont = { weight: '600' };
+  Chart.defaults.animation.duration = REDUCED_MOTION ? 0 : 700;
+  Chart.defaults.animation.easing = 'easeOutQuart';
+}
+
+// ══════════════════════════════════════
+// ESCENA 3D — puente entre los datos y el personaje
+// (solo lee los mismos datos; no escribe nada en Firebase)
+// ══════════════════════════════════════
+let currentStageMode = 'dashboard';
+
+function mountStage(sectionId) {
+  const stage = document.getElementById('stage');
+  const slot = document.querySelector(`#sec-${sectionId} .stage-slot`);
+  if (stage && slot) {
+    if (stage.parentElement !== slot) slot.appendChild(stage);
+    currentStageMode = sectionId;
+    stage.dataset.mode = sectionId;
+    if (window.Mascot) window.Mascot.setActive(true);
+  } else if (window.Mascot) {
+    window.Mascot.setActive(false);
+  }
+}
+
+function stagePeriodText() {
+  if (dashPeriod === 'todo') return 'Histórico';
+  const lbl = document.getElementById('dash-period-label');
+  const base = { dia: 'Día', semana: 'Semana', mes: 'Mes' }[dashPeriod] || '';
+  return base + (lbl && lbl.textContent ? ' · ' + lbl.textContent : '');
+}
+
+function computeStageState() {
+  const ventas = filterByPeriod(getData('ventas'), dashPeriod, dashRefDate);
+  const gastos = filterByPeriod(getData('gastos'), dashPeriod, dashRefDate);
+  const tv = sumMonto(ventas), tg = sumMonto(gastos);
+  const cats = {};
+  categoriasConDatos(getData('gastos')).forEach(c => {
+    const total = sumMonto(gastos.filter(i => matchesCategoria(i, c.id)));
+    cats[c.id || 'otros'] = { label: c.label, color: c.color, total };
+  });
+  return { mode: currentStageMode, tv, tg, net: tv - tg, nV: ventas.length, nG: gastos.length, cats };
+}
+
+function pushStage() {
+  const stageEl = document.getElementById('stage');
+  if (!stageEl) return;
+  if (!['dashboard', 'ventas', 'gastos'].includes(currentStageMode)) return;
+  try { updateDashControls(); } catch (e) {}
+  const s = computeStageState();
+  const kicker = document.getElementById('stage-kicker');
+  const title = document.getElementById('stage-title');
+  const value = document.getElementById('stage-value');
+  const sub = document.getElementById('stage-sub');
+  const legend = document.getElementById('stage-legend');
+  kicker.textContent = stagePeriodText();
+  legend.innerHTML = '';
+
+  if (s.mode === 'ventas') {
+    title.textContent = 'Ventas';
+    value.style.color = 'var(--green)';
+    countUp(value, s.tv, fmt, 'stage-ventas');
+    sub.textContent = s.nV
+      ? `${s.nV} ${s.nV === 1 ? 'venta' : 'ventas'} · ticket promedio ${fmt(s.tv / s.nV)}`
+      : 'Sin ventas en este periodo';
+  } else if (s.mode === 'gastos') {
+    title.textContent = 'Gastos';
+    value.style.color = 'var(--red)';
+    countUp(value, s.tg, fmt, 'stage-gastos');
+    sub.textContent = s.nG ? `${s.nG} ${s.nG === 1 ? 'compra' : 'compras'} registradas` : 'Sin gastos en este periodo';
+    legend.innerHTML = Object.values(s.cats).filter(c => c.total > 0)
+      .map(c => `<span class="cat-chip" style="color:${c.color}">${esc(c.label)} · ${fmt(c.total)}</span>`).join('');
+  } else {
+    title.textContent = 'Utilidad neta';
+    value.style.color = s.net >= 0 ? 'var(--text)' : 'var(--red)';
+    countUp(value, s.net, fmt, 'stage-net');
+    sub.textContent = `${fmt(s.tv)} vendidos · ${fmt(s.tg)} gastados`;
+  }
+  window.__stageState = s;
+  if (window.Mascot) window.Mascot.update(s);
+}
+
+function stageEvent(type, data) {
+  if (window.Mascot) window.Mascot.event(type, data || {});
+}
+
+window.addEventListener('mascot-ready', () => {
+  const active = document.querySelector('.section.active');
+  if (active) mountStage(active.id.replace('sec-', ''));
+  pushStage();
+});
+
+// Si la librería 3D no carga (sin internet / bloqueada), la app sigue igual con una vista estática
+setTimeout(() => {
+  if (!window.Mascot) {
+    const st = document.getElementById('stage');
+    if (st) st.classList.add('no-webgl');
+  }
+}, 12000);
+</script>
+<script type="module">
+
+// ══════════════════════════════════════
+// ESCENA 3D DEL PERSONAJE (Three.js)
+// Si algo falla aquí, la app sigue funcionando normal.
+// ══════════════════════════════════════
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const MODEL_URL = 'mascota.glb';
+const ANIMS_URL = 'mascota-anims.glb';
+const CHAR_HEIGHT = 1.55;
+
+const stageEl = document.getElementById('stage');
+const host = document.getElementById('stage-canvas');
+const bubbleEl = document.getElementById('stage-bubble');
+const hudEl = document.querySelector('.stage-hud');
+const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function boot() {
+  // ───────── Renderer ─────────
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  host.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  pmrem.dispose();
+
+  const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+  camera.position.set(0, 2.3, 8);
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 0.85, 0);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.enableZoom = false;
+  controls.enablePan = false;
+  controls.rotateSpeed = 0.6;
+  controls.minPolarAngle = Math.PI * 0.30;
+  controls.maxPolarAngle = Math.PI * 0.49;
+  controls.minAzimuthAngle = -0.75;
+  controls.maxAzimuthAngle = 0.75;
+  controls.update();
+
+  // ───────── Luces ─────────
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xd9dee6, 0.55));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.7);
+  sun.position.set(3, 6, 4.5);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.camera.left = -4; sun.shadow.camera.right = 4;
+  sun.shadow.camera.top = 4; sun.shadow.camera.bottom = -4;
+  sun.shadow.camera.near = 1; sun.shadow.camera.far = 16;
+  sun.shadow.radius = 5;
+  sun.shadow.bias = -0.0004;
+  sun.shadow.normalBias = 0.02;
+  scene.add(sun);
+  const rim = new THREE.DirectionalLight(0xffffff, 0.5);
+  rim.position.set(-4, 3, -3);
+  scene.add(rim);
+
+  // ───────── Materiales y geometrías compartidas ─────────
+  const mat = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0, ...o });
+  const M = {
+    floor: mat(0xffffff, { roughness: 0.9 }),
+    white: mat(0xfafafa, { roughness: 0.35 }),
+    wood: mat(0xe9dcc7, { roughness: 0.7 }),
+    dark: mat(0x2c2c2e, { roughness: 0.4 }),
+    steel: mat(0xc7c7cc, { roughness: 0.25, metalness: 0.8 }),
+    gold: mat(0xffc533, { roughness: 0.28, metalness: 0.95 }),
+    green: mat(0x34c759, { roughness: 0.4 }),
+    screen: mat(0x1d1d1f, { roughness: 0.2, emissive: 0x0a3d1a, emissiveIntensity: 0.6 }),
+  };
+  const catMats = {};
+  const catMat = (color) => (catMats[color] ||= mat(new THREE.Color(color), { roughness: 0.42 }));
+  const G = {
+    coin: new THREE.CylinderGeometry(0.1, 0.1, 0.028, 28),
+    spoolFlange: new THREE.CylinderGeometry(0.16, 0.16, 0.025, 32),
+    spoolCore: new THREE.CylinderGeometry(0.05, 0.05, 0.2, 16),
+    spoolFil: new THREE.CylinderGeometry(0.135, 0.135, 0.15, 32),
+  };
+
+  const shadowify = (o) => o.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+  const box = (w, h, d, m, r = 0) => {
+    const g = r > 0 ? roundedBox(w, h, d, r) : new THREE.BoxGeometry(w, h, d);
+    const mesh = new THREE.Mesh(g, m); mesh.castShadow = mesh.receiveShadow = true; return mesh;
+  };
+
+  function roundedBox(w, h, d, r) {
+    const shape = new THREE.Shape();
+    const x = -w / 2, y = -h / 2;
+    shape.moveTo(x + r, y);
+    shape.lineTo(x + w - r, y); shape.quadraticCurveTo(x + w, y, x + w, y + r);
+    shape.lineTo(x + w, y + h - r); shape.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    shape.lineTo(x + r, y + h); shape.quadraticCurveTo(x, y + h, x, y + h - r);
+    shape.lineTo(x, y + r); shape.quadraticCurveTo(x, y, x + r, y);
+    const g = new THREE.ExtrudeGeometry(shape, { depth: d - 2 * Math.min(r, d / 2.5), bevelEnabled: true, bevelThickness: Math.min(r, d / 2.5), bevelSize: 0.001, bevelSegments: 3, curveSegments: 6 });
+    g.center();
+    return g;
+  }
+
+  function makeSpool(color) {
+    const g = new THREE.Group();
+    const f1 = new THREE.Mesh(G.spoolFlange, M.white); f1.position.y = 0.0875;
+    const f2 = new THREE.Mesh(G.spoolFlange, M.white); f2.position.y = -0.0875;
+    const core = new THREE.Mesh(G.spoolCore, M.white);
+    const fil = new THREE.Mesh(G.spoolFil, catMat(color));
+    g.add(f1, f2, core, fil);
+    shadowify(g);
+    return g;
+  }
+
+  // ───────── Piso ─────────
+  const floor = new THREE.Mesh(new THREE.CylinderGeometry(3.0, 3.1, 0.14, 96), M.floor);
+  floor.position.y = -0.07; floor.receiveShadow = true;
+  scene.add(floor);
+
+  // ───────── Tweens mínimos ─────────
+  const tweens = [];
+  const ease = {
+    out: k => 1 - Math.pow(1 - k, 3),
+    inOut: k => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2),
+    back: k => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); },
+    in: k => k * k,
+  };
+  function tween(dur, fn, done, e = ease.out) { tweens.push({ t: 0, dur, fn, done, e }); }
+  function stepTweens(dt) {
+    for (let i = tweens.length - 1; i >= 0; i--) {
+      const tw = tweens[i]; tw.t += dt;
+      const k = Math.min(1, tw.t / tw.dur);
+      tw.fn(tw.e(k), k);
+      if (k >= 1) { tweens.splice(i, 1); tw.done && tw.done(); }
+    }
+  }
+
+  // ═════════ SETS ═════════
+  const sets = { dashboard: new THREE.Group(), ventas: new THREE.Group(), gastos: new THREE.Group() };
+  Object.values(sets).forEach(s => { s.visible = false; scene.add(s); });
+
+  // —— VENTAS: mostrador, caja registradora, monedas, productos impresos ——
+  const COUNTER_TOP = 0.58;
+  const V = {};
+  {
+    const s = sets.ventas;
+    const counter = box(2.7, 0.56, 0.62, M.white, 0.06); counter.position.set(0, 0.28, 0.38); s.add(counter);
+    const top = box(2.82, 0.04, 0.72, M.wood, 0.02); top.position.set(0, 0.57, 0.38); s.add(top);
+    const stripe = box(2.71, 0.08, 0.02, M.green); stripe.position.set(0, 0.40, 0.70); s.add(stripe);
+    // caja registradora
+    const reg = new THREE.Group();
+    const base = box(0.48, 0.2, 0.38, M.dark, 0.04); base.position.y = 0.1;
+    const scr = box(0.34, 0.2, 0.03, M.screen, 0.01); scr.position.set(0, 0.32, -0.06); scr.rotation.x = -0.35;
+    const drawer = box(0.5, 0.06, 0.4, M.steel, 0.02); drawer.position.y = 0.03;
+    reg.add(base, scr, drawer); reg.position.set(1.0, COUNTER_TOP, 0.38); reg.rotation.y = -0.25; s.add(reg);
+    V.register = reg;
+    // pila de monedas
+    V.coinPile = new THREE.InstancedMesh(G.coin, M.gold, 60);
+    V.coinPile.castShadow = true; V.coinPile.count = 0; s.add(V.coinPile);
+    V.coinPileBase = new THREE.Vector3(-1.02, COUNTER_TOP + 0.014, 0.38);
+    V.products = [];
+    V.productSlots = [-0.55, -0.28, -0.01, 0.26, 0.53];
+    V.productGeoms = [
+      new THREE.IcosahedronGeometry(0.085, 0),
+      new THREE.TorusKnotGeometry(0.055, 0.022, 64, 8),
+      new THREE.ConeGeometry(0.075, 0.18, 6),
+      new THREE.DodecahedronGeometry(0.08, 0),
+      new THREE.CylinderGeometry(0.05, 0.075, 0.16, 8),
+    ];
+    V.productColors = [0x007aff, 0xff9500, 0xaf52de, 0x34c759, 0xff2d55, 0x5ac8fa, 0xffcc00];
+    V.timer = 1.5;
+  }
+
+  // —— GASTOS: estante con carretes, carrito ——
+  const GA = {};
+  {
+    const s = sets.gastos;
+    const shelf = new THREE.Group();
+    const legM = M.steel;
+    [[-0.45, -0.18], [0.45, -0.18], [-0.45, 0.18], [0.45, 0.18]].forEach(([x, z]) => {
+      const leg = box(0.04, 1.65, 0.04, legM); leg.position.set(x, 0.825, z); shelf.add(leg);
+    });
+    GA.shelfSpools = [];
+    [0.32, 0.82, 1.32].forEach((y, row) => {
+      const plank = box(0.98, 0.035, 0.42, M.wood, 0.01); plank.position.set(0, y, 0); shelf.add(plank);
+      for (let i = 0; i < 3; i++) {
+        const sp = makeSpool('#c7c7cc');
+        sp.rotation.z = Math.PI / 2;
+        sp.position.set(-0.3 + i * 0.3, y + 0.18, 0.02);
+        shelf.add(sp); GA.shelfSpools.push(sp);
+      }
+    });
+    shelf.position.set(-2.05, 0, -0.2); shelf.rotation.y = 0.35;
+    s.add(shelf);
+    GA.shelf = shelf;
+
+    // carrito
+    const cart = new THREE.Group();
+    const bw = 0.9, bh = 0.42, bd = 0.6, wall = 0.025, by = 0.42;
+    const cartMat = mat(0x0071e3, { roughness: 0.35 });
+    const bottom = box(bw, wall, bd, cartMat); bottom.position.y = by; cart.add(bottom);
+    const w1 = box(bw, bh, wall, cartMat); w1.position.set(0, by + bh / 2, bd / 2); cart.add(w1);
+    const w2 = w1.clone(); w2.position.z = -bd / 2; cart.add(w2);
+    const w3 = box(wall, bh, bd, cartMat); w3.position.set(bw / 2, by + bh / 2, 0); cart.add(w3);
+    const w4 = w3.clone(); w4.position.x = -bw / 2; cart.add(w4);
+    const handle = box(0.03, 0.03, bd + 0.08, M.dark); handle.position.set(-bw / 2 - 0.22, by + bh + 0.2, 0); cart.add(handle);
+    const hb1 = box(0.25, 0.025, 0.025, M.steel); hb1.position.set(-bw / 2 - 0.1, by + bh + 0.1, bd / 2 - 0.02); hb1.rotation.z = -0.8; cart.add(hb1);
+    const hb2 = hb1.clone(); hb2.position.z = -bd / 2 + 0.02; cart.add(hb2);
+    const legF = box(0.03, by, 0.03, M.steel);
+    [[-bw / 2 + 0.06, bd / 2 - 0.06], [bw / 2 - 0.06, bd / 2 - 0.06], [-bw / 2 + 0.06, -bd / 2 + 0.06], [bw / 2 - 0.06, -bd / 2 + 0.06]].forEach(([x, z]) => {
+      const l = legF.clone(); l.position.set(x, by / 2 + 0.05, z); cart.add(l);
+      const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.022, 10, 20), M.dark);
+      wheel.position.set(x, 0.065, z); wheel.castShadow = true; cart.add(wheel);
+    });
+    cart.position.set(1.55, 0, 0.15); cart.rotation.y = -0.35;
+    s.add(cart);
+    GA.cart = cart;
+    GA.cartFloor = by + wall / 2;
+    GA.cartSpools = [];
+    GA.carried = null;
+    GA.phase = 'idle'; GA.timer = 0.8;
+  }
+
+  // —— RESUMEN: balanza ——
+  const D = {};
+  {
+    const s = sets.dashboard;
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.5, 0.1, 48), M.white); base.position.y = 0.05; s.add(base);
+    const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.06, 1.55, 24), M.steel); pillar.position.y = 0.85; s.add(pillar);
+    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.08, 24, 16), M.gold); knob.position.y = 1.66; s.add(knob);
+    const beam = new THREE.Group(); beam.position.y = 1.6; s.add(beam);
+    const bar = box(2.3, 0.05, 0.06, M.steel, 0.02); beam.add(bar);
+    D.beam = beam; D.halfLen = 1.1; D.angle = 0; D.target = 0;
+    const makePan = (color) => {
+      const g = new THREE.Group();
+      const dish = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.3, 0.06, 40), mat(color, { roughness: 0.35 }));
+      g.add(dish);
+      const strMat = new THREE.LineBasicMaterial({ color: 0x8e8e93, transparent: true, opacity: 0.8 });
+      const pts = [];
+      for (let i = 0; i < 3; i++) {
+        const a = i / 3 * Math.PI * 2;
+        pts.push(new THREE.Vector3(0, 0.75, 0), new THREE.Vector3(Math.cos(a) * 0.36, 0.03, Math.sin(a) * 0.36));
+      }
+      g.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), strMat));
+      const content = new THREE.Group(); content.position.y = 0.04; g.add(content);
+      g.userData.content = content;
+      shadowify(g);
+      s.add(g);
+      return g;
+    };
+    D.panL = makePan(0xe8f8ec);
+    D.panR = makePan(0xfdf0e2);
+    D.coins = new THREE.InstancedMesh(G.coin, M.gold, 30); D.coins.castShadow = true; D.coins.count = 0;
+    D.panL.userData.content.add(D.coins);
+    shadowify(s);
+    s.position.x = 0.75;
+  }
+
+  // ═════════ PERSONAJE ═════════
+  const charRoot = new THREE.Group();
+  scene.add(charRoot);
+  let charModel = null;     // grupo visible (GLB o juguete)
+  let headY = CHAR_HEIGHT;
+  let mixer = null;
+  const clips = {};
+  let baseAction = null, currentKind = null, oneShotActive = false;
+  let toy = null;
+  let charMeshes = [];
+  let hopY = 0;
+
+  // — Personaje de respaldo (si el .glb aún no está) —
+  function buildToy() {
+    const g = new THREE.Group();
+    const skin = mat(0xf5c9a6, { roughness: 0.6 });
+    const hair = mat(0x5a3a26, { roughness: 0.7 });
+    const cap = mat(0xff8a1f, { roughness: 0.5 });
+    const shirt = mat(0xe5e5ea, { roughness: 0.7 });
+    const overall = mat(0x2f8f9d, { roughness: 0.65 });
+    const pants = mat(0x3a3a3c, { roughness: 0.7 });
+    const shoe = mat(0xfafafa, { roughness: 0.4 });
+    const parts = {};
+    const hips = new THREE.Group(); hips.position.y = 0.55; g.add(hips);
+    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.22, 8, 16), shirt); torso.position.y = 0.2; hips.add(torso);
+    const bib = new THREE.Mesh(new THREE.CapsuleGeometry(0.205, 0.12, 8, 16), overall); bib.position.y = 0.1; bib.scale.set(1.02, 1, 1.04); hips.add(bib);
+    const head = new THREE.Group(); head.position.y = 0.62; hips.add(head); parts.head = head;
+    const skull = new THREE.Mesh(new THREE.SphereGeometry(0.34, 32, 24), skin); head.add(skull);
+    const hairM = new THREE.Mesh(new THREE.SphereGeometry(0.35, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.55), hair); hairM.position.y = 0.02; hairM.rotation.x = -0.25; head.add(hairM);
+    const capM = new THREE.Mesh(new THREE.SphereGeometry(0.355, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.42), cap); capM.position.y = 0.05; capM.rotation.x = -0.15; head.add(capM);
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.025, 24, 1, false, 0, Math.PI), cap); brim.position.set(0, 0.2, -0.3); brim.rotation.set(0.25, Math.PI / 2, 0); head.add(brim);
+    const gogM = mat(0xd1d1d6, { roughness: 0.3 }); const lensM = mat(0xffb27a, { roughness: 0.1, transparent: true, opacity: 0.65 });
+    [-0.11, 0.11].forEach(x => {
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.025, 10, 24), gogM); ring.position.set(x, 0.17, 0.29); ring.rotation.x = -0.45; head.add(ring);
+      const lens = new THREE.Mesh(new THREE.CircleGeometry(0.075, 24), lensM); lens.position.set(x, 0.17, 0.295); lens.rotation.x = -0.45; head.add(lens);
+    });
+    const eyeM = mat(0x1d1d1f, { roughness: 0.2 }); const hiM = mat(0xffffff, { emissive: 0xffffff, emissiveIntensity: 0.5 });
+    [-0.11, 0.11].forEach(x => {
+      const e = new THREE.Mesh(new THREE.SphereGeometry(0.052, 16, 12), eyeM); e.position.set(x, -0.01, 0.3); e.scale.z = 0.6; head.add(e);
+      const h = new THREE.Mesh(new THREE.SphereGeometry(0.016, 8, 8), hiM); h.position.set(x + 0.015, 0.012, 0.33); head.add(h);
+    });
+    const smile = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.014, 8, 20, Math.PI), mat(0x8a3b2e)); smile.position.set(0, -0.11, 0.3); smile.rotation.z = Math.PI; head.add(smile);
+    [-0.2, 0.2].forEach(x => { const ch = new THREE.Mesh(new THREE.CircleGeometry(0.04, 16), mat(0xff9c8a, { transparent: true, opacity: 0.55 })); ch.position.set(x, -0.07, 0.29); ch.lookAt(x * 3, -0.07, 1.5); head.add(ch); });
+    const mkLimb = (len, r, m) => { const pivot = new THREE.Group(); const l = new THREE.Mesh(new THREE.CapsuleGeometry(r, len, 6, 12), m); l.position.y = -len / 2 - r * 0.6; pivot.add(l); return pivot; };
+    parts.armL = mkLimb(0.22, 0.065, shirt); parts.armL.position.set(-0.25, 0.32, 0); parts.armL.rotation.z = 0.35; hips.add(parts.armL);
+    parts.armR = mkLimb(0.22, 0.065, shirt); parts.armR.position.set(0.25, 0.32, 0); parts.armR.rotation.z = -0.35; hips.add(parts.armR);
+    [parts.armL, parts.armR].forEach(a => { const hand = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 10), skin); hand.position.y = -0.38; a.add(hand); });
+    parts.legL = mkLimb(0.26, 0.085, pants); parts.legL.position.set(-0.1, 0, 0); hips.add(parts.legL);
+    parts.legR = mkLimb(0.26, 0.085, pants); parts.legR.position.set(0.1, 0, 0); hips.add(parts.legR);
+    [parts.legL, parts.legR].forEach(l => { const s = new THREE.Mesh(new THREE.CapsuleGeometry(0.075, 0.1, 6, 10), shoe); s.rotation.x = Math.PI / 2; s.position.set(0, -0.5, 0.05); l.add(s); });
+    parts.hips = hips;
+    shadowify(g);
+    return { group: g, parts };
+  }
+
+  function setCharacter(group) {
+    if (charModel) charRoot.remove(charModel);
+    charModel = group;
+    charRoot.add(group);
+    charMeshes = [];
+    group.traverse(o => { if (o.isMesh || o.isSkinnedMesh) charMeshes.push(o); });
+  }
+
+  toy = buildToy();
+  setCharacter(toy.group);
+  headY = 1.32;
+
+  // — Animación procedural del juguete —
+  let toyKind = 'idle', toyKindT = 0;
+  function animateToy(dt, t) {
+    if (!toy) return;
+    const p = toy.parts; toyKindT += dt;
+    const k = toyKind;
+    const walk = k === 'walk';
+    const sw = walk ? Math.sin(t * 9) * 0.6 : 0;
+    p.legL.rotation.x = sw; p.legR.rotation.x = -sw;
+    p.armL.rotation.x = -sw * 0.8; p.armR.rotation.x = sw * 0.8;
+    p.hips.position.y = 0.55 + (walk ? Math.abs(Math.cos(t * 9)) * 0.04 : Math.sin(t * 2.2) * 0.008);
+    let armLZ = 0.35, armRZ = -0.35, headTilt = 0, headNod = Math.sin(t * 1.6) * 0.03;
+    if (k === 'cheer') { const w = Math.sin(toyKindT * 12) * 0.2; armLZ = 2.7 + w; armRZ = -2.7 - w; }
+    else if (k === 'wave') { armRZ = -2.5 + Math.sin(toyKindT * 14) * 0.35; }
+    else if (k === 'sad') { armRZ = -2.3; p.armR.rotation.x = -0.5; headTilt = 0.18 + Math.sin(toyKindT * 6) * 0.04; headNod = 0.12; }
+    p.armL.rotation.z += (armLZ - p.armL.rotation.z) * Math.min(1, dt * 10);
+    p.armR.rotation.z += (armRZ - p.armR.rotation.z) * Math.min(1, dt * 10);
+    p.head.rotation.z += (headTilt - p.head.rotation.z) * Math.min(1, dt * 6);
+    p.head.rotation.x = headNod;
+  }
+
+  // — Carga del modelo real (Meshy) —
+  const loader = new GLTFLoader();
+  function lockRootMotion(clip) {
+    clip.tracks.forEach(tr => {
+      if (!tr.name.endsWith('.position')) return;
+      const v = tr.values;
+      const x0 = v[0], z0 = v[2];
+      for (let i = 0; i < v.length; i += 3) { v[i] = x0; v[i + 2] = z0; }
+    });
+    return clip;
+  }
+  const KIND_KEYS = {
+    idle: ['idle'],
+    walk: ['walk'],
+    run: ['run'],
+    cheer: ['cheer', 'victory', 'celebrat'],
+    wave: ['wave', 'hello'],
+    sad: ['scratch', 'confus', 'sad', 'think'],
+  };
+  function registerClips(list) {
+    list.forEach(c => {
+      const n = (c.name || '').toLowerCase();
+      for (const [kind, keys] of Object.entries(KIND_KEYS)) {
+        if (!clips[kind] && keys.some(k => n.includes(k))) { clips[kind] = lockRootMotion(c); break; }
+      }
+    });
+  }
+
+  async function loadModel() {
+    let gltf;
+    try { gltf = await loader.loadAsync(MODEL_URL); } catch (e) { return; } // sin .glb → se queda el personaje de respaldo
+    const model = gltf.scene;
+    model.traverse(o => {
+      if (o.isMesh) {
+        o.castShadow = true; o.receiveShadow = false;
+        o.frustumCulled = false; // los SkinnedMesh pueden desaparecer al animarse si se recortan
+        if (o.material) { o.material.envMapIntensity = 0.9; }
+      }
+    });
+    // normalizar tamaño y apoyar en el piso
+    model.updateMatrixWorld(true);
+    const bb = new THREE.Box3().setFromObject(model);
+    const size = bb.getSize(new THREE.Vector3());
+    const s = CHAR_HEIGHT / (size.y || 1);
+    model.scale.setScalar(s);
+    model.updateMatrixWorld(true);
+    const bb2 = new THREE.Box3().setFromObject(model);
+    const c = bb2.getCenter(new THREE.Vector3());
+    model.position.x -= c.x; model.position.z -= c.z; model.position.y -= bb2.min.y;
+    const wrap = new THREE.Group(); wrap.add(model);
+
+    mixer = new THREE.AnimationMixer(model);
+    mixer.addEventListener('finished', () => { oneShotActive = false; playBase(true); });
+    registerClips(gltf.animations || []);
+    try {
+      const extra = await loader.loadAsync(ANIMS_URL);
+      registerClips(extra.animations || []);
+    } catch (e) { /* animaciones opcionales */ }
+
+    toy = null;
+    setCharacter(wrap);
+    headY = CHAR_HEIGHT;
+    baseAction = null; currentKind = null;
+    playBase(true);
+  }
+
+  function actionFor(kind) {
+    const clip = clips[kind];
+    return clip && mixer ? mixer.clipAction(clip) : null;
+  }
+  function crossTo(action, fade = 0.35) {
+    if (!action) return;
+    if (baseAction && baseAction !== action) baseAction.fadeOut(fade);
+    action.reset().setEffectiveWeight(1).fadeIn(fade).play();
+    baseAction = action;
+  }
+  // animación base según el comportamiento actual
+  let wantBase = 'idle';
+  function playBase(force) {
+    if (oneShotActive) return;
+    if (!mixer) { toyKind = wantBase === 'walk' ? 'walk' : (wantBase === 'sad' ? 'sad' : 'idle'); return; }
+    if (!force && currentKind === wantBase) return;
+    let a = actionFor(wantBase) || actionFor('idle');
+    if (wantBase === 'sad' && actionFor('sad')) { a = actionFor('sad'); a.setLoop(THREE.LoopRepeat); }
+    if (a) { a.setLoop(THREE.LoopRepeat, Infinity); a.clampWhenFinished = false; crossTo(a); }
+    else if (baseAction) { baseAction.fadeOut(0.3); baseAction = null; }
+    currentKind = wantBase;
+  }
+  function setBase(kind) { wantBase = kind; playBase(false); }
+  function playOnce(kind) {
+    if (!mixer) {
+      toyKind = kind; toyKindT = 0;
+      setTimeout(() => { if (toyKind === kind) { toyKind = wantBase === 'walk' ? 'walk' : (wantBase === 'sad' ? 'sad' : 'idle'); } }, 1400);
+      return;
+    }
+    const a = actionFor(kind) || (kind === 'cheer' ? actionFor('wave') : null);
+    if (!a) { hop(); return; }
+    a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true;
+    oneShotActive = true; currentKind = kind;
+    crossTo(a, 0.25);
+  }
+  function hop(h = 0.28) {
+    if (REDUCED) return;
+    tween(0.22, k => { hopY = h * k; }, () => tween(0.3, k => { hopY = h * (1 - k); }, null, ease.in), ease.out);
+  }
+
+  // ═════════ BURBUJA ═════════
+  let bubbleUntil = 0, bubblePersistent = '';
+  function say(text, secs = 3.2) {
+    if (!text) return;
+    bubbleEl.textContent = text;
+    bubbleEl.classList.add('show');
+    bubbleUntil = performance.now() + secs * 1000;
+  }
+  function setPersistent(text) {
+    bubblePersistent = text;
+    if (performance.now() >= bubbleUntil) { if (text) { bubbleEl.textContent = text; bubbleEl.classList.add('show'); } else bubbleEl.classList.remove('show'); }
+  }
+  const headWorld = new THREE.Vector3();
+  let bubbleX = -1, bubbleY = -1;
+  function updateBubble(dt) {
+    if (bubbleUntil && performance.now() >= bubbleUntil) {
+      bubbleUntil = 0;
+      if (bubblePersistent) bubbleEl.textContent = bubblePersistent; else bubbleEl.classList.remove('show');
+    }
+    headWorld.set(0, headY + 0.22 + hopY, 0);
+    charRoot.localToWorld(headWorld);
+    headWorld.project(camera);
+    const w = host.clientWidth, h = host.clientHeight;
+    let x = (headWorld.x * 0.5 + 0.5) * w;
+    let y = (-headWorld.y * 0.5 + 0.5) * h;
+    const half = (bubbleEl.offsetWidth || 120) / 2 + 8;
+    x = Math.max(half, Math.min(w - half, x));
+    const bh = (bubbleEl.offsetHeight || 34);
+    x += host.offsetLeft; y += host.offsetTop;
+    y = Math.max(host.offsetTop + bh + 8, y);
+    // nunca encima de las cifras (HUD)
+    if (hudEl) {
+      const hb = hudEl.offsetTop + hudEl.offsetHeight;
+      const hr = hudEl.offsetLeft + hudEl.offsetWidth;
+      if (x - half < hr && y - bh < hb) { if (hr + half * 2 + 8 < w) x = hr + half + 8; else y = hb + bh + 14; }
+    }
+    if (bubbleX < 0) { bubbleX = x; bubbleY = y; }
+    bubbleX += (x - bubbleX) * Math.min(1, dt * 12);
+    bubbleY += (y - bubbleY) * Math.min(1, dt * 12);
+    bubbleEl.style.left = bubbleX.toFixed(1) + 'px';
+    bubbleEl.style.top = bubbleY.toFixed(1) + 'px';
+  }
+
+  // ═════════ ESTADO / DATOS ═════════
+  let state = { mode: 'dashboard', tv: 0, tg: 0, net: 0, nV: 0, nG: 0, cats: {} };
+  let mode = null;
+  const charTarget = { x: 0, z: 0, ry: 0 };
+  const fmt = n => '$' + Math.round(n).toLocaleString('es-MX');
+
+  const coinsFor = v => (v <= 0 ? 0 : Math.max(1, Math.min(60, Math.round(Math.sqrt(v) / 4))));
+  const tmpM = new THREE.Matrix4(), tmpQ = new THREE.Quaternion(), tmpS = new THREE.Vector3(1, 1, 1), tmpP = new THREE.Vector3();
+  function layoutCoinPile(im, count, base, cols = 3, perCol = 20, spread = 0.2) {
+    im.count = count;
+    for (let i = 0; i < count; i++) {
+      const col = i % cols, lvl = Math.floor(i / cols);
+      const ang = col / cols * Math.PI * 2 + 0.4;
+      const r = cols > 1 ? spread * 0.5 : 0;
+      tmpP.set(base.x + Math.cos(ang) * r + Math.sin(i * 12.9898) * 0.008, base.y + lvl * 0.029, base.z + Math.sin(ang) * r + Math.cos(i * 78.233) * 0.008);
+      tmpQ.setFromAxisAngle(new THREE.Vector3(0, 1, 0), i * 0.7);
+      tmpM.compose(tmpP, tmpQ, tmpS);
+      im.setMatrixAt(i, tmpM);
+      if (lvl >= perCol) { im.count = i; break; }
+    }
+    im.instanceMatrix.needsUpdate = true;
+  }
+
+  function spoolDistribution(total) {
+    const cats = Object.values(state.cats).filter(c => c.total > 0);
+    const sum = cats.reduce((a, c) => a + c.total, 0);
+    if (!sum || total <= 0) return [];
+    let alloc = cats.map(c => ({ c, n: Math.floor(c.total / sum * total), rem: (c.total / sum * total) % 1 }));
+    alloc.forEach(a => { if (a.n === 0) a.n = 1; });
+    let used = alloc.reduce((a, x) => a + x.n, 0);
+    alloc.sort((a, b) => b.rem - a.rem);
+    for (let i = 0; used < total && i < alloc.length * 3; i++) { alloc[i % alloc.length].n++; used++; }
+    const out = [];
+    alloc.forEach(a => { for (let i = 0; i < a.n; i++) out.push(a.c.color); });
+    return out.slice(0, Math.max(total, alloc.length));
+  }
+  function pickCatColor() {
+    const cats = Object.values(state.cats).filter(c => c.total > 0);
+    const sum = cats.reduce((a, c) => a + c.total, 0);
+    if (!sum) return '#ff9500';
+    let r = Math.random() * sum;
+    for (const c of cats) { r -= c.total; if (r <= 0) return c.color; }
+    return cats[0].color;
+  }
+
+  // — VENTAS —
+  function rebuildVentas() {
+    layoutCoinPile(V.coinPile, coinsFor(state.tv), V.coinPileBase, 3, 20, 0.2);
+    const want = Math.min(V.productSlots.length, state.nV);
+    while (V.products.length > want) { const p = V.products.pop(); sets.ventas.remove(p); }
+    while (V.products.length < want) spawnProduct(V.products.length, false);
+    V.products.forEach((p, i) => { p.position.x = V.productSlots[i]; });
+  }
+  function spawnProduct(i, animate) {
+    const geo = V.productGeoms[Math.floor(Math.random() * V.productGeoms.length)];
+    const m = new THREE.Mesh(geo, catMat('#' + V.productColors[Math.floor(Math.random() * V.productColors.length)].toString(16).padStart(6, '0')));
+    m.castShadow = true;
+    geo.computeBoundingBox();
+    const yOff = -geo.boundingBox.min.y;
+    m.position.set(V.productSlots[i] ?? 0, COUNTER_TOP + 0.02 + yOff, 0.42);
+    m.rotation.y = Math.random() * Math.PI;
+    m.userData.baseY = m.position.y;
+    sets.ventas.add(m);
+    V.products.splice(i, 0, m);
+    if (animate) { m.scale.setScalar(0.001); tween(0.5, k => m.scale.setScalar(Math.max(0.001, k)), null, ease.back); }
+    return m;
+  }
+  function sellOne() {
+    if (state.nV <= 0) return;
+    playOnce(Math.random() < 0.5 ? 'wave' : 'cheer');
+    hop(0.16);
+    // producto vendido sale del mostrador hacia el cliente
+    if (V.products.length) {
+      const p = V.products.pop();
+      const sx = p.position.x, sy = p.position.y, sz = p.position.z;
+      tween(0.7, k => { p.position.set(sx + k * 0.3, sy + Math.sin(k * Math.PI) * 0.35, sz + k * 1.4); p.rotation.y += 0.15; p.scale.setScalar(Math.max(0.001, 1 - k * k)); },
+        () => { sets.ventas.remove(p); }, ease.inOut);
+      // reponer en la primera posición
+      setTimeout(() => {
+        if (mode !== 'ventas') return;
+        if (V.products.length < Math.min(V.productSlots.length, state.nV)) {
+          spawnProduct(0, true);
+          V.products.forEach((q, i) => { const from = q.position.x, to = V.productSlots[i]; if (from !== to) tween(0.35, k => { q.position.x = from + (to - from) * k; }); });
+        }
+      }, 650);
+    }
+    // moneda que cae a la pila
+    const coin = new THREE.Mesh(G.coin, M.gold); coin.castShadow = true;
+    const top = V.coinPileBase.y + Math.ceil(Math.max(1, V.coinPile.count) / 3) * 0.029 + 0.03;
+    coin.position.set(V.coinPileBase.x, 2.3, V.coinPileBase.z);
+    sets.ventas.add(coin);
+    tween(0.55, k => { coin.position.y = 2.3 + (top - 2.3) * k; coin.rotation.x = k * 6; },
+      () => { tween(0.25, k => { coin.scale.setScalar(Math.max(0.001, 1 - k)); }, () => sets.ventas.remove(coin)); }, ease.in);
+    // la caja registradora "salta"
+    const r = V.register;
+    tween(0.35, k => { r.position.y = COUNTER_TOP + Math.sin(k * Math.PI) * 0.06; });
+  }
+  function updateVentas(dt) {
+    V.products.forEach((p, i) => { p.rotation.y += dt * 0.6; p.position.y = p.userData.baseY + Math.sin(performance.now() / 600 + i) * 0.012; });
+    if (state.nV <= 0) return;
+    V.timer -= dt;
+    if (V.timer <= 0) {
+      sellOne();
+      const busy = Math.min(1, Math.log10(1 + state.nV) / 1.5);
+      V.timer = 4.2 - busy * 2.2 + Math.random() * 0.6;
+    }
+  }
+
+  // — GASTOS —
+  const SHELF_X = -1.15, CART_X = 0.62, WALK_Z = 0.35, SPEED = 0.95;
+  function rebuildGastos() {
+    // estante con colores de las categorías
+    const cols = Object.values(state.cats).map(c => c.color);
+    const palette = cols.length ? cols : ['#ff9500', '#007aff', '#af52de', '#ff3b30'];
+    GA.shelfSpools.forEach((sp, i) => { sp.children[3].material = catMat(palette[i % palette.length]); });
+    // carrito con carretes según el gasto
+    GA.cartSpools.forEach(s => GA.cart.remove(s));
+    GA.cartSpools = [];
+    const n = state.tg <= 0 ? 0 : Math.max(1, Math.min(12, Math.round(Math.sqrt(state.tg) / 6)));
+    spoolDistribution(n).slice(0, 12).forEach((color, i) => {
+      const sp = makeSpool(color);
+      const layer = Math.floor(i / 6), j = i % 6;
+      sp.rotation.z = Math.PI / 2; sp.rotation.y = 0.15 * (j % 2 ? 1 : -1);
+      sp.scale.setScalar(0.85);
+      sp.position.set(-0.28 + (j % 3) * 0.28, GA.cartFloor + 0.15 + layer * 0.27, -0.14 + Math.floor(j / 3) * 0.28);
+      GA.cart.add(sp); GA.cartSpools.push(sp);
+    });
+  }
+  function dropCarried() {
+    if (!GA.carried) return;
+    const sp = GA.carried; GA.carried = null;
+    const from = new THREE.Vector3(); sp.getWorldPosition(from);
+    charRoot.remove(sp); sets.gastos.add(sp); sp.position.copy(from);
+    const to = new THREE.Vector3(0, GA.cartFloor + 0.5, 0); GA.cart.localToWorld(to);
+    tween(0.45, k => { sp.position.lerpVectors(from, to, k); sp.position.y += Math.sin(k * Math.PI) * 0.35; sp.rotation.x += 0.2; },
+      () => { tween(0.2, k => sp.scale.setScalar(Math.max(0.001, 1 - k)), () => sets.gastos.remove(sp)); }, ease.inOut);
+    const c = GA.cart; const y0 = 0;
+    tween(0.4, k => { c.position.y = y0 + Math.sin(k * Math.PI * 2) * 0.03 * (1 - k); });
+  }
+  function updateGastos(dt) {
+    if (state.tg <= 0) {
+      setBase('idle');
+      charTarget.x = -0.2; charTarget.z = WALK_Z; charTarget.ry = 0;
+      return;
+    }
+    const pos = charRoot.position;
+    const go = (tx) => {
+      const d = tx - pos.x;
+      if (Math.abs(d) < 0.04) return true;
+      pos.x += Math.sign(d) * Math.min(Math.abs(d), SPEED * dt);
+      charTarget.x = pos.x; charTarget.ry = d > 0 ? Math.PI / 2 : -Math.PI / 2;
+      setBase('walk');
+      return false;
+    };
+    GA.timer -= dt;
+    switch (GA.phase) {
+      case 'idle':
+        if (GA.timer <= 0) GA.phase = 'toShelf';
+        break;
+      case 'toShelf':
+        if (go(SHELF_X)) { GA.phase = 'pick'; GA.timer = 0.7; setBase('idle'); charTarget.ry = -1.0; }
+        break;
+      case 'pick':
+        if (GA.timer <= 0) {
+          const sp = makeSpool(pickCatColor());
+          sp.rotation.z = Math.PI / 2; sp.position.set(0, 0.9, 0.32); sp.scale.setScalar(0.001);
+          charRoot.add(sp); GA.carried = sp;
+          tween(0.35, k => sp.scale.setScalar(Math.max(0.001, k)), null, ease.back);
+          GA.phase = 'toCart';
+        }
+        break;
+      case 'toCart':
+        if (go(CART_X)) { GA.phase = 'drop'; GA.timer = 0.35; setBase('idle'); charTarget.ry = 0.9; }
+        break;
+      case 'drop':
+        if (GA.timer <= 0) { dropCarried(); playOnce('cheer'); GA.phase = 'rest'; GA.timer = 1.6; }
+        break;
+      case 'rest':
+        charTarget.ry = 0.25;
+        if (GA.timer <= 0) GA.phase = 'toShelf';
+        break;
+    }
+    if (GA.carried) GA.carried.rotation.x += dt * 2;
+  }
+
+  // — RESUMEN —
+  function rebuildDashboard() {
+    const tot = state.tv + state.tg;
+    D.target = tot > 0 ? Math.max(-1, Math.min(1, (state.tv - state.tg) / tot)) * 0.32 : 0;
+    layoutCoinPile(D.coins, Math.min(30, coinsFor(state.tv)), new THREE.Vector3(0, 0.014, 0), 3, 10, 0.24);
+    const content = D.panR.userData.content;
+    content.children.slice().forEach(c => content.remove(c));
+    const n = state.tg <= 0 ? 0 : Math.max(1, Math.min(5, Math.round(Math.sqrt(state.tg) / 10)));
+    spoolDistribution(n).slice(0, 5).forEach((color, i) => {
+      const sp = makeSpool(color);
+      const ang = i / Math.max(1, Math.min(n, 4)) * Math.PI * 2;
+      if (i < 4) { sp.position.set(Math.cos(ang) * 0.17, 0.09, Math.sin(ang) * 0.17); }
+      else sp.position.set(0, 0.27, 0);
+      content.add(sp);
+    });
+  }
+  function updateDashboard(dt) {
+    D.angle += (D.target - D.angle) * Math.min(1, dt * 2.2);
+    D.beam.rotation.z = D.angle + Math.sin(performance.now() / 900) * 0.006;
+    const L = D.halfLen, by = 1.6, x0 = sets.dashboard.position.x;
+    const c = Math.cos(D.beam.rotation.z), s = Math.sin(D.beam.rotation.z);
+    D.panL.position.set(-L * c, by - L * s - 0.75, 0);
+    D.panR.position.set(L * c, by + L * s - 0.75, 0);
+    void x0;
+  }
+
+  // ═════════ MODOS ═════════
+  const POS = {
+    dashboard: { x: -1.35, z: 0.45, ry: 0.35 },
+    ventas: { x: 0.05, z: -0.35, ry: 0 },
+    gastos: { x: -0.2, z: WALK_Z, ry: 0 },
+  };
+  function moodText() {
+    if (mode === 'ventas') return state.nV ? `¡Llevo ${state.nV} ${state.nV === 1 ? 'venta' : 'ventas'}!` : 'Esperando clientes…';
+    if (mode === 'gastos') return state.tg > 0 ? 'Comprando insumos…' : '¡Cero gastos aquí!';
+    if (state.tv === 0 && state.tg === 0) return 'Sin movimientos todavía';
+    return state.net >= 0 ? `¡Vamos ganando! +${fmt(state.net)}` : 'Uy… hay que vender más';
+  }
+  function dashboardBase() { return (state.net < 0) ? 'sad' : 'idle'; }
+
+  function enterMode(m) {
+    if (!sets[m]) return;
+    const prev = mode;
+    mode = m;
+    Object.entries(sets).forEach(([k, s]) => { s.visible = k === m; });
+    // aparece el set con un pequeño "pop"
+    const s = sets[m]; const sc = 0.92;
+    s.scale.setScalar(sc);
+    tween(0.6, k => s.scale.setScalar(sc + (1 - sc) * k), null, ease.back);
+    if (GA.carried) { charRoot.remove(GA.carried); GA.carried = null; }
+    const p = POS[m];
+    charRoot.position.set(p.x, 0, p.z);
+    charTarget.x = p.x; charTarget.z = p.z; charTarget.ry = p.ry;
+    charRoot.rotation.y = p.ry;
+    GA.phase = 'idle'; GA.timer = 0.8; V.timer = 1.2;
+    oneShotActive = false;
+    setBase(m === 'dashboard' ? dashboardBase() : 'idle');
+    playBase(true);
+    if (prev !== null) { bubbleX = -1; }
+    rebuildAll();
+    setPersistent(moodText());
+  }
+  function rebuildAll() {
+    if (mode === 'ventas') rebuildVentas();
+    else if (mode === 'gastos') rebuildGastos();
+    else rebuildDashboard();
+  }
+
+  // ═════════ INTERACCIÓN ═════════
+  const ray = new THREE.Raycaster(); const ndc = new THREE.Vector2();
+  let downX = 0, downY = 0, downT = 0;
+  const PHRASES = ['¡Hola! ¿Imprimimos algo?', '¡A darle!', 'PLA, PETG… ¡lo que quieras!', '¡Una capa a la vez!', 'Calibrando la cama… 😄'];
+  function hitChar(ev) {
+    const r = renderer.domElement.getBoundingClientRect();
+    ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    // aproximación con una cápsula invisible: estable aunque el modelo esté animado
+    const p = new THREE.Vector3(); charRoot.getWorldPosition(p);
+    const sphere = new THREE.Sphere(new THREE.Vector3(p.x, p.y + CHAR_HEIGHT * 0.55 + hopY, p.z), CHAR_HEIGHT * 0.42);
+    return ray.ray.intersectsSphere(sphere);
+  }
+  renderer.domElement.addEventListener('pointerdown', e => { downX = e.clientX; downY = e.clientY; downT = performance.now(); });
+  renderer.domElement.addEventListener('pointerup', e => {
+    if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6 || performance.now() - downT > 500) return;
+    if (hitChar(e)) {
+      playOnce(Math.random() < 0.5 ? 'cheer' : 'wave'); hop(0.3);
+      say(PHRASES[Math.floor(Math.random() * PHRASES.length)], 2.6);
+    }
+  });
+  let hoverRAF = 0;
+  renderer.domElement.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse' || hoverRAF) return;
+    hoverRAF = requestAnimationFrame(() => { hoverRAF = 0; renderer.domElement.style.cursor = hitChar(e) ? 'pointer' : 'grab'; });
+  });
+
+  // ═════════ LOOP (solo dibuja cuando se ve) ═════════
+  const clock = new THREE.Clock();
+  let inView = true, active = true, running = false;
+  function shouldRun() { return inView && active && !document.hidden && stageEl.isConnected && stageEl.offsetParent !== null; }
+  function refreshLoop() {
+    const want = shouldRun();
+    if (want && !running) { clock.getDelta(); renderer.setAnimationLoop(frame); running = true; }
+    else if (!want && running) { renderer.setAnimationLoop(null); running = false; }
+  }
+  new IntersectionObserver(entries => { inView = entries.some(en => en.isIntersecting); refreshLoop(); }, { threshold: 0.01 }).observe(stageEl);
+  document.addEventListener('visibilitychange', refreshLoop);
+
+  function resize() {
+    const w = host.clientWidth, h = host.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    controls.target.y = camera.aspect < 1 ? 1.25 : 0.85;
+    // encuadre: que la escena (≈7 unidades de ancho) quepa también en celular
+    const fitW = camera.aspect < 1.4 ? 5.2 : 5.6;
+    const vFov = THREE.MathUtils.degToRad(camera.fov);
+    const dist = Math.max(6.4, (fitW / 2) / (Math.tan(vFov / 2) * camera.aspect));
+    const dir = camera.position.clone().sub(controls.target).normalize();
+    camera.position.copy(controls.target).addScaledVector(dir, dist);
+    camera.updateProjectionMatrix();
+    controls.update();
+  }
+  new ResizeObserver(() => { resize(); if (!running) renderer.render(scene, camera); }).observe(host);
+
+  let t = 0;
+  function frame() {
+    const dt = Math.min(0.05, clock.getDelta());
+    t += dt;
+    stepTweens(dt);
+    if (mode === 'ventas') updateVentas(dt);
+    else if (mode === 'gastos') updateGastos(dt);
+    else if (mode === 'dashboard') {
+      updateDashboard(dt);
+      if (state.net > 0 && !oneShotActive && Math.random() < dt / 7) { playOnce('cheer'); }
+    }
+    // movimiento suave del personaje
+    charRoot.position.x += (charTarget.x - charRoot.position.x) * Math.min(1, dt * 8);
+    charRoot.position.z += (charTarget.z - charRoot.position.z) * Math.min(1, dt * 8);
+    let dr = charTarget.ry - charRoot.rotation.y;
+    dr = Math.atan2(Math.sin(dr), Math.cos(dr));
+    charRoot.rotation.y += dr * Math.min(1, dt * 9);
+    if (charModel) charModel.position.y = hopY;
+    if (mixer) mixer.update(dt); else animateToy(dt, t);
+    controls.update();
+    updateBubble(dt);
+    renderer.render(scene, camera);
+  }
+
+  // ═════════ API PÚBLICA ═════════
+  let lastKey = '';
+  window.Mascot = {
+    update(s) {
+      if (!s) return;
+      const key = JSON.stringify(s);
+      if (key === lastKey) return;   // sin cambios: no reconstruir
+      lastKey = key;
+      const prevMode = mode;
+      state = { ...state, ...s };
+      if (s.mode !== prevMode) enterMode(s.mode);
+      else { rebuildAll(); if (mode === 'dashboard') setBase(dashboardBase()); setPersistent(moodText()); }
+    },
+    event(type, data) {
+      if (type === 'venta') {
+        playOnce('cheer'); hop(0.3);
+        say(`¡Venta! +${fmt(data.monto || 0)} 🎉`, 3);
+        if (mode === 'ventas') setTimeout(() => sellOne(), 250);
+      } else if (type === 'gasto') {
+        playOnce(data.categoria === 'insumo' ? 'cheer' : 'wave');
+        const msg = { insumo: '¡Filamento nuevo! 🧵', inversion: '¡Inversión al taller! 🛠️', servicio: 'Servicio pagado ✅', nomina: 'Nómina pagada 💸' }[data.categoria] || 'Gasto registrado';
+        say(msg, 3);
+      }
+    },
+    setActive(v) { active = !!v; refreshLoop(); if (active) resize(); },
+  };
+
+  enterMode('dashboard');
+  resize();
+  refreshLoop();
+  stageEl.classList.remove('no-webgl');
+  stageEl.classList.add('ready');
+  if (window.__stageState) window.Mascot.update(window.__stageState);
+  window.dispatchEvent(new Event('mascot-ready'));
+  setTimeout(() => say('¡Hola! Soy tu ayudante de One Print 3D', 3.5), 600);
+  loadModel().catch(err => console.warn('[Mascot] modelo no cargado:', err));
+}
+
+try {
+  if (!host || !stageEl) throw new Error('stage missing');
+  boot();
+} catch (err) {
+  console.warn('[Mascot] Vista 3D desactivada:', err);
+  if (stageEl) stageEl.classList.add('no-webgl');
 }
 </script>
 </body>
